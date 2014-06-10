@@ -32,6 +32,7 @@ require(["dijit/registry",
         title: "Display",
 	content: new DataGrid()
     });
+
     var download = new ContentPane({
         title: "Download"
     });
