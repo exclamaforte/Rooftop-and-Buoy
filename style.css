@@ -13,16 +13,14 @@ html, body {
     width: 30%;
 }
 #menu {
-    width:30%;
+    width:100px;
 }
 
-#graphHolder {
-    
+#graphHolder {    
     width:70%;
  }
 
 #downloadButton{
-    vertical-align: middle;
     width:100px;
 }
 .claro .demoLayout .edgePanel{
