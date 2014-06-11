@@ -9,8 +9,10 @@ require(["dijit/registry",
 	 "dojo/fx/Toggler",
 	 "dojo/on",
 	 "dijit/form/TimeTextBox",
+	 "dojo/topic",
+	 "dojo/dom-construct",
 	 "dojo/domReady!"
-], function(registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler, on, TimeTextBox){
+], function(registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler, on, TimeTextBox, topic, domConstruct){
     //create the BorderContainer and attach it to our appLayout div
     var appLayout = new BorderContainer({
 	design: "headline"
@@ -29,7 +31,7 @@ require(["dijit/registry",
         splitter: true
     });
 
-    var numberGraphs = 2;
+    var numberGraphs = 3;
     var percentage = 94 / numberGraphs;
     
     
@@ -46,7 +48,13 @@ require(["dijit/registry",
 	content:"hi",
 	style: "height: " + percentage.toString() + "%"
     });
-    var graphs = [graph1, graph2];
+    var graph3 = new ContentPane({
+	region: "center",
+	id: "graph3", "class": "graph",
+	content:"hi",
+	style: "height: " + percentage.toString() + "%"
+    });
+    var graphs = [graph1, graph2, graph3];
     //----------------tabs-----------------------------------------------------------------------------------------------
     var display = new ContentPane({
         title: "Display",
@@ -62,12 +70,19 @@ require(["dijit/registry",
 
 
     //----------------content-----------------------------------------------------------------------------------------------
-    function addSet(setName, data){
-	display.addChild(new ContentPane({
-	    id: setName,
-	    "class": "edgePanel",
-	    content: new CheckBox({name: "1"})
-	}));
+    function addSet(setName){ //add data field later with graphs.
+	var percentage = 94 / (graphs.length + 1);
+	graphs.map( function (item) {
+	    item.style = "height: " + percentage.toString() + "%";
+	});
+	var holder = new ContentPane({
+	    region: "center",
+	    id: setName, "class": "graph",
+	    content:setName,
+	    style: "height: " + percentage.toString() + "%"
+	});
+	domConstruct.create(holder);
+	graphs.push(holder);
     }
     var downloadButton = new Button({
 	label: "Download",
@@ -117,6 +132,7 @@ require(["dijit/registry",
 	label: "Add Set",
 	id: "tempSet"
     });
+
     //=====--building the dom--=======
     display.addChild(setMaker);
     time.addChild(startTime);
@@ -133,7 +149,7 @@ require(["dijit/registry",
     appLayout.addChild(menu);
     appLayout.addChild(graphHolder);
 
-    //=====Behavior=====
+    //=====Button Behavior=====
 
 
     on(collapseButton, "change", function(e) {
@@ -143,8 +159,29 @@ require(["dijit/registry",
     on(showButton, "change", function(e) {
 	menuToggler.show();
     });
-    
-    on(setMaker, "click", addSet());
+    var labelAndPublish = function (start) {
+	var label = start;
+	var anon = function () {
+	    topic.publish("addDataSet", label);
+	    label= label+1;
+	};
+	return anon;
+    }(0);
+
+    on(setMaker, "click", function (e) {
+	var label = 0;
+	var anon = function (y) {
+	    topic.publish("addDataSet", label);
+	    label= label+1;
+	};
+	anan();
+    });
+
+    //------------event handling -------------- 
+    topic.subscribe("addDataSet", function (text) {
+	addSet(text);
+    });
+
     // start up and do layout
     appLayout.startup();
 
