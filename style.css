@@ -12,12 +12,13 @@ html, body {
 #leftCol {
     width: 30%;
 }
-#menu {
-    width:100px;
+#controls {
+    width:30%;
 }
 
 #graphHolder {    
     width:70%;
+    height:100%;
  }
 
 #downloadButton{

@@ -11,15 +11,17 @@ require(["dijit/registry",
 	 "dijit/form/TimeTextBox",
 	 "dojo/topic",
 	 "dojo/dom-construct",
+	 "dojo/query",
+	 "dojo/dom-style",
 	 "dojo/domReady!"
-], function(registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler, on, TimeTextBox, topic, domConstruct){
+], function(registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler, on, TimeTextBox, topic, domConstruct, query, style){
     //create the BorderContainer and attach it to our appLayout div
     var appLayout = new BorderContainer({
 	design: "headline"
     }, "appLayout");
 
     //------------------sections------------------------------------------------------------------------------------------
-    var menu = new TabContainer({
+    var controls = new TabContainer({
 	region: "center",
 	id: "controls",
 	tabPosition: "top"
@@ -27,7 +29,7 @@ require(["dijit/registry",
     
     var graphHolder = new ContentPane({
         region: "right",
-        id: "leftCol", "class": "centerPanel",
+        id: "graphHolder", "class": "centerPanel",
         splitter: true
     });
 
@@ -35,30 +37,9 @@ require(["dijit/registry",
     var percentage = 94 / numberGraphs;
     
     
-    var graph1 = new ContentPane({
-	region: "center",
-	id: "graph1", "class": "graph",
-	content:"hi",
-	style: "height: " + percentage.toString() + "%"
-    });
-
-    var graph2 = new ContentPane({
-	region: "center",
-	id: "graph2", "class": "graph",
-	content:"hi",
-	style: "height: " + percentage.toString() + "%"
-    });
-    var graph3 = new ContentPane({
-	region: "center",
-	id: "graph3", "class": "graph",
-	content:"hi",
-	style: "height: " + percentage.toString() + "%"
-    });
-    var graphs = [graph1, graph2, graph3];
     //----------------tabs-----------------------------------------------------------------------------------------------
     var display = new ContentPane({
-        title: "Display",
-	content: new DataGrid()
+        title: "Display"
     });
 
     var download = new ContentPane({
@@ -70,20 +51,7 @@ require(["dijit/registry",
 
 
     //----------------content-----------------------------------------------------------------------------------------------
-    function addSet(setName){ //add data field later with graphs.
-	var percentage = 94 / (graphs.length + 1);
-	graphs.map( function (item) {
-	    item.style = "height: " + percentage.toString() + "%";
-	});
-	var holder = new ContentPane({
-	    region: "center",
-	    id: setName, "class": "graph",
-	    content:setName,
-	    style: "height: " + percentage.toString() + "%"
-	});
-	domConstruct.create(holder);
-	graphs.push(holder);
-    }
+
     var downloadButton = new Button({
 	label: "Download",
 	id: "downloadButton"
@@ -138,15 +106,12 @@ require(["dijit/registry",
     time.addChild(startTime);
     time.addChild(endTime);
     download.addChild(downloadButton);
-    menu.addChild(display);
-    menu.addChild(download);
-    menu.addChild(time);
+    controls.addChild(display);
+    controls.addChild(download);
+    controls.addChild(time);
 //    graphHolder.addChild(collapseButton);
 //    graphHolder.addChild(showButton);
-    graphs.map(function(item) { graphHolder.addChild(item);});
-    graphHolder.addChild(graph1);
-    graphHolder.addChild(graph2);
-    appLayout.addChild(menu);
+    appLayout.addChild(controls);
     appLayout.addChild(graphHolder);
 
     //=====Button Behavior=====
@@ -162,25 +127,34 @@ require(["dijit/registry",
     var labelAndPublish = function (start) {
 	var label = start;
 	var anon = function () {
-	    topic.publish("addDataSet", label);
+	    topic.publish("addDataSet", label.toString());
 	    label= label+1;
 	};
 	return anon;
     }(0);
 
-    on(setMaker, "click", function (e) {
-	var label = 0;
-	var anon = function (y) {
-	    topic.publish("addDataSet", label);
-	    label= label+1;
-	};
-	anan();
-    });
+    on(setMaker, "click", labelAndPublish);
+
 
     //------------event handling -------------- 
-    topic.subscribe("addDataSet", function (text) {
-	addSet(text);
+    topic.subscribe("addDataSet", function (setName) { //add data field later with graphs. the sizing is still screwed up. it was fine before, but now i'm trying to get the value of the height of the container for the graphs and the whole things is breaking.
+	var graphs = query(".graph");
+	var percentage = Math.floor(style.get("graphHolder", "height") / (graphs.length + 1));
+	var holder = new ContentPane({
+	    region: "center",
+	    id: setName, "class": "graph",
+	    content:setName
+	});
+	graphHolder.addChild(holder);
+	var i = 0;
+	for (i = 0; i < graphs.length; i++) {
+	    style.set(graphs[i].id, "height", percentage.toString());
+	}
+
     });
+
+
+
 
     // start up and do layout
     appLayout.startup();
