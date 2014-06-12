@@ -14,8 +14,12 @@ require(["dijit/registry",
 	 "dojo/query",
 	 "dojo/dom-style",
 	 "dijit/Calendar",
+	 "dijit/form/DropDownButton",
+	 "dijit/DropDownMenu",
+	 "dijit/MenuItem",
 	 "dojo/domReady!"
-], function(registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler, on, TimeTextBox, topic, domConstruct, query, style, Calendar){
+], function (registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler,
+	     on, TimeTextBox, topic, domConstruct, query, style, Calendar, DropDownButton, DropDownMenu, MenuItem){
     //create the BorderContainer and attach it to our appLayout div
     var appLayout = new BorderContainer({
 	design: "headline"
@@ -52,11 +56,23 @@ require(["dijit/registry",
 
 
     //----------------content-----------------------------------------------------------------------------------------------
+    var dataMenu = new DropDownMenu({style: "display: none;"});
+    var imageMenu = new DropDownMenu({style: "display: none;"});
 
-    var downloadButton = new Button({
-	label: "Download",
-	id: "downloadButton"
+    var dataFileTypes = ['csv', 'netCDF', 'xls'];
+    var imageFileTypes = ['png', 'jpg', 'pdf'];
+    
+    var downloadData = new DropDownButton({
+	label: "Download Data",
+	id: "downloadData",
+	dropDown: dataMenu
     });
+    var downloadImage = new DropDownButton({
+	label: "Download Image",
+	id: "downloadImage",
+	dropDown: imageMenu
+    });
+
     var menuToggler = new Toggler({
 	node: "controls"
     });
@@ -111,6 +127,7 @@ require(["dijit/registry",
 	label: "Resize",
 	id: "resizeButton"
     });
+
     //=====--building the dom--=======
     display.addChild(setMaker);
     display.addChild(resizeButton);
@@ -118,8 +135,21 @@ require(["dijit/registry",
     time.addChild(calendar);
     time.addChild(startTime);
     time.addChild(endTime);
+    
 
-    download.addChild(downloadButton);
+    dataFileTypes.map(function (item) {	dataMenu.addChild( new MenuItem({
+	    label: item,
+            iconClass:"dijitEditorIcon dijitEditorIconSave",
+	    onClick: function() {alert(item);}
+    }));});
+    imageFileTypes.map(function (item) { imageMenu.addChild( new MenuItem({
+	    label: item,
+            iconClass:"dijitEditorIcon dijitEditorIconSave",
+	    onClick: function() {alert(item);}
+    }));});
+
+    download.addChild(downloadData);
+    download.addChild(downloadImage);
 
     controls.addChild(display);
     controls.addChild(download);
