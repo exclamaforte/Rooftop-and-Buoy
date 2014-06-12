@@ -59,7 +59,7 @@ require(["dijit/registry",
     var time = new ContentPane({
         title: "Time"
     });
-
+    
 
     //----------------content-----------------------------------------------------------------------------------------------
     var dataMenu = new DropDownMenu({style: "display: none;"});
@@ -79,13 +79,24 @@ require(["dijit/registry",
 	dropDown: imageMenu
     });
 
+    var downloadDataPane = new ContentPane({
+	title: "size",
+	id: "downloadDataPane",
+	content: downloadData
+    });
+
+    var downloadImagePane = new ContentPane({
+	id: "downloadImagePane",
+	content: downloadImage
+    });
+
     var menuToggler = new Toggler({
 	node: "controls"
     });
 
     var collapseButton = new Button({
 	id: "collapseButton"
-    });    
+    });
     var showButton = new Button({
 	id: "showButton"
     });
@@ -123,11 +134,20 @@ require(["dijit/registry",
 	id: "calendar"
 
     });
-
+    
+    var timeUpdateButton = new Button({
+	id: "timeUpdateButton",
+	label: "Update Time"
+    });
+    
     var setMaker = new Button({
 	label: "Add Set",
 	id: "setMaker"
 
+    });
+    var setDestroyer = new Button({
+	label: "Remove Set",
+	id: "setDestroyer"
     });
     var resizeButton = new Button({
 	label: "Resize",
@@ -144,12 +164,13 @@ require(["dijit/registry",
 
     //=====--building the dom--=======
     display.addChild(setMaker);
+    display.addChild(setDestroyer);
     display.addChild(resizeButton);
 
     time.addChild(calendar);
     time.addChild(startTime);
     time.addChild(endTime);
-    
+    time.addChild(timeUpdateButton);
 
     dataFileTypes.map(function (item) {	dataMenu.addChild( new MenuItem({
 	    label: item,
@@ -162,8 +183,8 @@ require(["dijit/registry",
 	    onClick: function() {alert(item);}
     }));});
 
-    download.addChild(downloadData);
-    download.addChild(downloadImage);
+    download.addChild(downloadDataPane);
+    download.addChild(downloadImagePane);
 
     controls.addChild(display);
     controls.addChild(download);
@@ -190,15 +211,14 @@ require(["dijit/registry",
 	};
 	return anon;
     }(0);
-
-    on(setMaker, "click", labelAndPublishSet);
-    
-    on(resizeButton, "click", function(e){topic.publish("resize");});
-
-    //------------event handling -------------- ==========
     var graphList = [];
-    var width = -1;
-    topic.subscribe("resize", function (e) {
+    on(setMaker, "click", labelAndPublishSet);
+    on(timeUpdateButton, "click", function (e) {topic.publish("dateChange");});    
+    on(resizeButton, "click", function (e) {topic.publish("rsize");});
+    on(setDestroyer, "click", function (e) {topic.publish("removePlot", graphList[0].id);});
+    //------------event handling -------------- ==========
+
+    topic.subscribe("rsize", function (e) {
 	var graphs = query(".graph");
 	var percentage = (style.get("graphHolder", "height") - 1) / (graphs.length);
 	var width = style.get("graphHolder", "width");
@@ -212,6 +232,16 @@ require(["dijit/registry",
 	});
     });
 
+    topic.subscribe("dateChange", function (e) {
+	alert("Date Change");
+    });
+
+    topic.subscribe("removePlot", function (plotName) {//untested
+	funct.filter(graphList, function (plot) {return plot.id === plotName;})[0].destroy();
+	
+	graphList = funct.filter(graphList, function (plot) {return !(plot.id === plotName);});
+	topic.publish("rsize");
+    });
     topic.subscribe("addDataSet", function (setName) { //add data field later with graphs. add highlight plugin. Selection can be done with moveslice, charting events can be used to make it stand out.
 	
 	var holder = new ChartWidgit({
@@ -230,18 +260,12 @@ require(["dijit/registry",
 	    .addPlot("default", {type: Lines})
 	    .setTheme(theme)
 	    .addSeries("Series A", [1,2,3,4,5,6,7])
-	    .addSeries("Series B", [7,6,5,4,3,2,1])
+	    .addSeries("Series B", [7,6,5,4,3,2,1]);
 
 
-	topic.publish("resize");
+	topic.publish("rsize");
     });
-
-
-
-
     // start up and do layout
     appLayout.startup();
-
-
 });
 
