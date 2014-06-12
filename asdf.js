@@ -13,8 +13,9 @@ require(["dijit/registry",
 	 "dojo/dom-construct",
 	 "dojo/query",
 	 "dojo/dom-style",
+	 "dijit/Calendar",
 	 "dojo/domReady!"
-], function(registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler, on, TimeTextBox, topic, domConstruct, query, style){
+], function(registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler, on, TimeTextBox, topic, domConstruct, query, style, Calendar){
     //create the BorderContainer and attach it to our appLayout div
     var appLayout = new BorderContainer({
 	design: "headline"
@@ -96,21 +97,34 @@ require(["dijit/registry",
 	}
     });
     
-    var setMaker = new Button({
-	label: "Add Set",
-	id: "tempSet"
+    var calendar = new Calendar({
+	id: "calendar"
+
     });
 
+    var setMaker = new Button({
+	label: "Add Set",
+	id: "setMaker"
+
+    });
+    var resizeButton = new Button({
+	label: "Resize",
+	id: "resizeButton"
+    });
     //=====--building the dom--=======
     display.addChild(setMaker);
+    display.addChild(resizeButton);
+
+    time.addChild(calendar);
     time.addChild(startTime);
     time.addChild(endTime);
+
     download.addChild(downloadButton);
+
     controls.addChild(display);
     controls.addChild(download);
     controls.addChild(time);
-//    graphHolder.addChild(collapseButton);
-//    graphHolder.addChild(showButton);
+
     appLayout.addChild(controls);
     appLayout.addChild(graphHolder);
 
@@ -124,7 +138,7 @@ require(["dijit/registry",
     on(showButton, "change", function(e) {
 	menuToggler.show();
     });
-    var labelAndPublish = function (start) {
+    var labelAndPublishSet = function (start) {
 	var label = start;
 	var anon = function () {
 	    topic.publish("addDataSet", label.toString());
@@ -133,24 +147,32 @@ require(["dijit/registry",
 	return anon;
     }(0);
 
-    on(setMaker, "click", labelAndPublish);
-
+    on(setMaker, "click", labelAndPublishSet);
+    
+    on(resizeButton, "click", function(e){topic.publish("resize");});
 
     //------------event handling -------------- 
+
+    topic.subscribe("resize", function (e) {
+	var graphs = query(".graph");
+	var i;
+	var percentage = Math.floor( 0.8 * (style.get("graphHolder", "height")) / (graphs.length));
+	for (i = 0; i < graphs.length; i++) {
+	    style.set(graphs[i].id, "height", percentage.toString() + "px");
+	}	
+    });
+
     topic.subscribe("addDataSet", function (setName) { //add data field later with graphs. the sizing is still screwed up. it was fine before, but now i'm trying to get the value of the height of the container for the graphs and the whole things is breaking.
 	var graphs = query(".graph");
-	var percentage = Math.floor(style.get("graphHolder", "height") / (graphs.length + 1));
+	var percentage = Math.floor(0.80 * style.get("graphHolder", "height") / (graphs.length + 1));
 	var holder = new ContentPane({
 	    region: "center",
 	    id: setName, "class": "graph",
-	    content:setName
+	    content:setName,
+	    splitter:true
 	});
 	graphHolder.addChild(holder);
-	var i = 0;
-	for (i = 0; i < graphs.length; i++) {
-	    style.set(graphs[i].id, "height", percentage.toString());
-	}
-
+	topic.publish("resize");
     });
 
 
