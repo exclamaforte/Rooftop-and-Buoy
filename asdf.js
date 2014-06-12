@@ -17,9 +17,15 @@ require(["dijit/registry",
 	 "dijit/form/DropDownButton",
 	 "dijit/DropDownMenu",
 	 "dijit/MenuItem",
+	 "dojox/charting/Chart",
+	 "dojox/charting/themes/Claro",
+	 "dojox/charting/plot2d/Lines",
+	 "dojox/charting/widget/Chart",
+	 "dojox/lang/functional",
 	 "dojo/domReady!"
 ], function (registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler,
-	     on, TimeTextBox, topic, domConstruct, query, style, Calendar, DropDownButton, DropDownMenu, MenuItem){
+	     on, TimeTextBox, topic, domConstruct, query, style, Calendar, DropDownButton, DropDownMenu, MenuItem, 
+	     Chart, theme, Lines, ChartWidgit, funct){
     //create the BorderContainer and attach it to our appLayout div
     var appLayout = new BorderContainer({
 	design: "headline"
@@ -128,6 +134,14 @@ require(["dijit/registry",
 	id: "resizeButton"
     });
 
+    var chartData = [
+	{x: 1, y: 2},
+	{x: 2, y: 3},
+	{x: 3, y: 4},
+	{x: 4, y: 5},
+	{x: 5, y: 6}
+    ];
+
     //=====--building the dom--=======
     display.addChild(setMaker);
     display.addChild(resizeButton);
@@ -181,27 +195,44 @@ require(["dijit/registry",
     
     on(resizeButton, "click", function(e){topic.publish("resize");});
 
-    //------------event handling -------------- 
-
+    //------------event handling -------------- ==========
+    var graphList = [];
+    var width = -1;
     topic.subscribe("resize", function (e) {
 	var graphs = query(".graph");
-	var i;
-	var percentage = Math.floor( 0.8 * (style.get("graphHolder", "height")) / (graphs.length));
-	for (i = 0; i < graphs.length; i++) {
-	    style.set(graphs[i].id, "height", percentage.toString() + "px");
-	}	
+	var percentage = (style.get("graphHolder", "height") - 1) / (graphs.length);
+	var width = style.get("graphHolder", "width");
+	query(".graph").forEach( function (item) {
+	    style.set(item, "height", percentage.toString() + "px");
+	    style.set(item, "width", width.toString() + "px");	    
+	});
+
+	funct.forEach(graphList, function (item) {
+	    item.resize({h: percentage, w: width});
+	});
     });
 
-    topic.subscribe("addDataSet", function (setName) { //add data field later with graphs. the sizing is still screwed up. it was fine before, but now i'm trying to get the value of the height of the container for the graphs and the whole things is breaking.
-	var graphs = query(".graph");
-	var percentage = Math.floor(0.80 * style.get("graphHolder", "height") / (graphs.length + 1));
-	var holder = new ContentPane({
-	    region: "center",
+    topic.subscribe("addDataSet", function (setName) { //add data field later with graphs. add highlight plugin. Selection can be done with moveslice, charting events can be used to make it stand out.
+	
+	var holder = new ChartWidgit({
+	    title: setName,
+	    margins: 0,
 	    id: setName, "class": "graph",
-	    content:setName,
-	    splitter:true
+	    theme: theme
 	});
+	
 	graphHolder.addChild(holder);
+	graphList.push(holder);
+
+	var width = style.get(setName, "height");
+	var height = style.get(setName, "width");
+	holder.chart
+	    .addPlot("default", {type: Lines})
+	    .setTheme(theme)
+	    .addSeries("Series A", [1,2,3,4,5,6,7])
+	    .addSeries("Series B", [7,6,5,4,3,2,1])
+
+
 	topic.publish("resize");
     });
 
@@ -213,3 +244,4 @@ require(["dijit/registry",
 
 
 });
+
