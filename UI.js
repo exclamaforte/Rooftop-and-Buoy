@@ -23,10 +23,11 @@ require(["dijit/registry",
 	 "dojox/charting/widget/Chart",
 	 "dojox/lang/functional",
 	 "dijit/form/ValidationTextBox",
+	 "dojo/_base/xhr",
 	 "dojo/domReady!"
 ], function (registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler,
 	     on, TimeTextBox, topic, domConstruct, query, style, Calendar, DropDownButton, DropDownMenu, MenuItem, 
-	     Chart, theme, Lines, ChartWidgit, funct, VTB){
+	     Chart, theme, Lines, ChartWidgit, funct, VTB, xhr){
     //create the BorderContainer and attach it to our appLayout div
     var appLayout = new BorderContainer({
 	design: "headline"
@@ -44,10 +45,6 @@ require(["dijit/registry",
         id: "graphHolder", "class": "centerPanel",
         splitter: true
     });
-
-    var numberGraphs = 3;
-    var percentage = 94 / numberGraphs;
-    
     
     //----------------tabs-----------------------------------------------------------------------------------------------
     var display = new ContentPane({
@@ -88,20 +85,28 @@ require(["dijit/registry",
 
     var downloadImagePane = new ContentPane({
 	id: "downloadImagePane", 
-	class: "downloadPane"
+	"class": "downloadPane"
     });
     
     var downloadSizeX = new VTB({
 	type: "text",
 	name: "downloadSizeX", id: "downloadSizeX",
-	value: "400", regExp:"^[0-9]+$"
+	value: "400", 
+	regExp:"^[0-9]+$",
+	style: "width: 100px"
+	
     });
     var downloadSizeY = new VTB({
 	type: "text",
 	name: "downloadSizeY", id: "downloadSizeY",
-	value: "600", regExp:"^[0-9]+$"
+	value: "600", 
+	regExp:"^[0-9]+$",
+	style: "width: 100px"
     });
-
+    var sameSizeAsCurrent  = new Button ({
+	id: "sameSizeAsCurrent",
+	label: "Same Size as Current Display"
+    });
     var menuToggler = new Toggler({
 	node: "controls"
     });
@@ -161,23 +166,11 @@ require(["dijit/registry",
 	label: "Remove Set",
 	id: "setDestroyer"
     });
-    var resizeButton = new Button({
-	label: "Resize",
-	id: "resizeButton"
-    });
-
-    var chartData = [
-	{x: 1, y: 2},
-	{x: 2, y: 3},
-	{x: 3, y: 4},
-	{x: 4, y: 5},
-	{x: 5, y: 6}
-    ];
 
     //=====--building the dom--=======
     display.addChild(setMaker);
     display.addChild(setDestroyer);
-    display.addChild(resizeButton);
+
 
     time.addChild(calendar);
     time.addChild(startTime);
@@ -187,14 +180,15 @@ require(["dijit/registry",
     dataFileTypes.map(function (item) {	dataMenu.addChild( new MenuItem({
 	    label: item,
             iconClass:"dijitEditorIcon dijitEditorIconSave",
-	    onClick: function() {alert(item);}
+	    onClick: function() {topic.publish("saveChart", item);}
     }));});
     imageFileTypes.map(function (item) { imageMenu.addChild( new MenuItem({
 	    label: item,
             iconClass:"dijitEditorIcon dijitEditorIconSave",
-	    onClick: function() {alert(item);}
+	    onClick: function() {topic.publish("saveChart", item);}
     }));});
-    
+
+    downloadImagePane.addChild(sameSizeAsCurrent);    
     downloadImagePane.addChild(downloadSizeX);
     downloadImagePane.addChild(downloadSizeY);
     downloadImagePane.addChild(downloadImage);
@@ -218,6 +212,7 @@ require(["dijit/registry",
     on(showButton, "change", function(e) {
 	menuToggler.show();
     });
+
     var labelAndPublishSet = function (start) {
 	var label = start;
 	var anon = function () {
@@ -226,15 +221,16 @@ require(["dijit/registry",
 	};
 	return anon;
     }(0);
+
     var graphList = [];
     on(setMaker, "click", labelAndPublishSet);
     on(timeUpdateButton, "click", function (e) {topic.publish("dateChange");});    
-    on(resizeButton, "click", function (e) {topic.publish("rsize");});
     on(setDestroyer, "click", function (e) {
 	if (graphList.length !== 0) {
 	    topic.publish("removePlot", graphList[0].id);
 	}
     });
+    on(window, "resize", function (e) {topic.publish("rsize");});
     //------------event handling -------------- ==========
 
     topic.subscribe("rsize", function (e) {
@@ -289,5 +285,16 @@ require(["dijit/registry",
     });
     // start up and do layout
     appLayout.startup();
+
+    //-------------------------dataloading---------------------------------------------------------------------------
+    xhr.get({
+	url:"0.0.0.0:8000/testData.js",
+	handleAs: "json",
+	timeout: 1000,
+	error: function () {alert("Data request timed out.");}
+	load: function (result) {
+	    alert("The data has arrived.");
+	}
+    });
 });
 
