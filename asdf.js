@@ -22,10 +22,11 @@ require(["dijit/registry",
 	 "dojox/charting/plot2d/Lines",
 	 "dojox/charting/widget/Chart",
 	 "dojox/lang/functional",
+	 "dijit/form/ValidationTextBox",
 	 "dojo/domReady!"
 ], function (registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler,
 	     on, TimeTextBox, topic, domConstruct, query, style, Calendar, DropDownButton, DropDownMenu, MenuItem, 
-	     Chart, theme, Lines, ChartWidgit, funct){
+	     Chart, theme, Lines, ChartWidgit, funct, VTB){
     //create the BorderContainer and attach it to our appLayout div
     var appLayout = new BorderContainer({
 	design: "headline"
@@ -75,19 +76,30 @@ require(["dijit/registry",
     });
     var downloadImage = new DropDownButton({
 	label: "Download Image",
-	id: "downloadImage",
+	id: "downloadImage", 
 	dropDown: imageMenu
     });
 
     var downloadDataPane = new ContentPane({
 	title: "size",
-	id: "downloadDataPane",
+	id: "downloadDataPane", class: "downloadPane",
 	content: downloadData
     });
 
     var downloadImagePane = new ContentPane({
-	id: "downloadImagePane",
-	content: downloadImage
+	id: "downloadImagePane", 
+	class: "downloadPane"
+    });
+    
+    var downloadSizeX = new VTB({
+	type: "text",
+	name: "downloadSizeX", id: "downloadSizeX",
+	value: "400", regExp:"^[0-9]+$"
+    });
+    var downloadSizeY = new VTB({
+	type: "text",
+	name: "downloadSizeY", id: "downloadSizeY",
+	value: "600", regExp:"^[0-9]+$"
     });
 
     var menuToggler = new Toggler({
@@ -117,7 +129,7 @@ require(["dijit/registry",
 	    visibleIncrement: 'T00:15:00',
 	    visibleRange: 'T01:00:00'
 	}
-    });
+	    });
 
     var endTime = new TimeTextBox({
 	id: "endTime",
@@ -182,9 +194,12 @@ require(["dijit/registry",
             iconClass:"dijitEditorIcon dijitEditorIconSave",
 	    onClick: function() {alert(item);}
     }));});
-
-    download.addChild(downloadDataPane);
+    
+    downloadImagePane.addChild(downloadSizeX);
+    downloadImagePane.addChild(downloadSizeY);
+    downloadImagePane.addChild(downloadImage);
     download.addChild(downloadImagePane);
+    download.addChild(downloadDataPane);
 
     controls.addChild(display);
     controls.addChild(download);
@@ -215,7 +230,11 @@ require(["dijit/registry",
     on(setMaker, "click", labelAndPublishSet);
     on(timeUpdateButton, "click", function (e) {topic.publish("dateChange");});    
     on(resizeButton, "click", function (e) {topic.publish("rsize");});
-    on(setDestroyer, "click", function (e) {topic.publish("removePlot", graphList[0].id);});
+    on(setDestroyer, "click", function (e) {
+	if (graphList.length !== 0) {
+	    topic.publish("removePlot", graphList[0].id);
+	}
+    });
     //------------event handling -------------- ==========
 
     topic.subscribe("rsize", function (e) {
@@ -237,9 +256,12 @@ require(["dijit/registry",
     });
 
     topic.subscribe("removePlot", function (plotName) {//untested
-	funct.filter(graphList, function (plot) {return plot.id === plotName;})[0].destroy();
+	var plot = funct.filter(graphList, function (plot) {return plot.id === plotName;})[0];
+	if (!(typeof plot === "undefined" )){
+	    plot.destroy();
+	    graphList = funct.filter(graphList, function (plot) {return !(plot.id === plotName);});
+	}
 	
-	graphList = funct.filter(graphList, function (plot) {return !(plot.id === plotName);});
 	topic.publish("rsize");
     });
     topic.subscribe("addDataSet", function (setName) { //add data field later with graphs. add highlight plugin. Selection can be done with moveslice, charting events can be used to make it stand out.
