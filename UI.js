@@ -24,10 +24,11 @@ require(["dijit/registry",
 	 "dojox/lang/functional",
 	 "dijit/form/ValidationTextBox",
 	 "dojo/_base/xhr",
+	 "dojo/request",
 	 "dojo/domReady!"
 ], function (registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler,
 	     on, TimeTextBox, topic, domConstruct, query, style, Calendar, DropDownButton, DropDownMenu, MenuItem, 
-	     Chart, theme, Lines, ChartWidgit, funct, VTB, xhr){
+	     Chart, theme, Lines, ChartWidgit, funct, VTB, xhr, request) {
     //create the BorderContainer and attach it to our appLayout div
     var appLayout = new BorderContainer({
 	design: "headline"
@@ -260,23 +261,23 @@ require(["dijit/registry",
 	
 	topic.publish("rsize");
     });
-    topic.subscribe("addDataSet", function (setName) { //add data field later with graphs. add highlight plugin. Selection can be done with moveslice, charting events can be used to make it stand out.
+
+    topic.subscribe("addDataSet", function (plotObject) { //add data field later with graphs. add highlight plugin. Selection can be done with moveslice, charting events can be used to make it stand out.
 	
 	var holder = new ChartWidgit({
-	    title: setName,
+	    title: plotObject.title,
 	    margins: 0,
-	    id: setName, "class": "graph",
+	    id: plotObject.title, "class": "graph",
 	    theme: theme
 	});
 	
 	graphHolder.addChild(holder);
 	graphList.push(holder);
 
-	var width = style.get(setName, "height");
-	var height = style.get(setName, "width");
-	holder.chart
+	holder = holder.chart
 	    .addPlot("default", {type: Lines})
-	    .setTheme(theme)
+	    .setTheme(theme);
+	funct.forEach(plotObject.series)
 	    .addSeries("Series A", [1,2,3,4,5,6,7])
 	    .addSeries("Series B", [7,6,5,4,3,2,1]);
 
@@ -287,14 +288,17 @@ require(["dijit/registry",
     appLayout.startup();
 
     //-------------------------dataloading---------------------------------------------------------------------------
-    xhr.get({
-	url:"0.0.0.0:8000/testData.js",
+    var data = {};
+    request.get("testData.json", {
 	handleAs: "json",
-	timeout: 1000,
-	error: function () {alert("Data request timed out.");}
-	load: function (result) {
-	    alert("The data has arrived.");
-	}
-    });
+	timeout: 5000
+	}).then( 
+	    function (response) {
+		topic.publish("addDataSet", response.plot);
+	    },
+	    function (error) {
+		console.log(error);
+	    }
+	);
 });
 
