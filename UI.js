@@ -29,10 +29,15 @@ require(["dijit/registry",
 	 "dojo/store/DataStore",
 	 "dojox/layout/TableContainer",
 	 "dijit/form/ToggleButton",
+	 "dojox/charting/action2d/Tooltip",
+	 "dojox/charting/action2d/Magnify",
+	 "dojo/store/Observable",
+	 "dojo/store/Memory",
 	 "dojo/domReady!"
 ], function (registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler,
 	     on, TimeTextBox, topic, domConstruct, query, style, Calendar, DropDownButton, DropDownMenu, MenuItem, 
-	     Chart, theme, Lines, ChartWidgit, funct, VTB, xhr, request, Default, DataStore, TableContainer, ToggleButton) {
+	     Chart, theme, Lines, ChartWidgit, funct, VTB, xhr, request, Default, DataStore, TableContainer, ToggleButton, 
+	     Tooltip, Magnify, ObservableStore, MemoryStore) {
     //create the BorderContainer and attach it to our appLayout div
     var appLayout = new BorderContainer({
 	design: "headline"
@@ -252,12 +257,14 @@ require(["dijit/registry",
 	    new ToggleButton({
 		showLabel: true,
 		checked: true,
-		label: plotObject.title,
+		label: plotObject.title + " - On",
 		onChange: function (val) { 
 		    if (val) {
+			this.set("label", plotObject.title + " - On");
 			topic.publish("addDataSet", plotObject);
 		    }
 		    else {
+			this.set("label", plotObject.title + " - Off");
 			topic.publish("removePlot", plotObject);
 		    }
 		}
@@ -306,9 +313,9 @@ require(["dijit/registry",
 	graphList.push(holder);
 	
 	holder.chart
-	    .addPlot("default", {type: Lines})
-	    .addAxis(plotObject.xAxisName, {includeZero: true, fixLower: "major", fixUpper: "major"})
-	    .addAxis(plotObject.yAxisName, {vertical: true, fixLower: "major", fixUpper: "major"})
+	    .addPlot("default", {type: Lines, markers:true, tension: "S", lines: true})
+	    .addAxis("x", {includeZero: true, fixLower: "major", fixUpper: "major"})
+	    .addAxis("y", {vertical: true, fixLower: "major", fixUpper: "major"})
 	    .setTheme(theme);
 	funct.forEach(plotObject.series, function (item) {
 /*	    var yValues = funct.map(item.data, function (ele) {
@@ -320,19 +327,28 @@ require(["dijit/registry",
 */
 	    holder.chart.addSeries(item.label, item.data);
 	});
+	var tip = new Tooltip(holder.chart, "default");
+	var mag = new Magnify(holder.chart, "default");
+	holder.chart.render();
 	topic.publish("rsize");
     });
     // start up and do layout
     appLayout.startup();
 
     //-------------------------dataloading---------------------------------------------------------------------------
-
+    var dataHolder = [];
     request.get("testData.json", {
 	handleAs: "json",
 	timeout: 5000
 	}).then( 
 	    function (response) {
 		funct.forEach(response.plots, function (plot) {
+/*		    dataHolder.push(new ObservableStore (new MemoryStore({
+			data: {//need to add more information as the usage becomes clear
+			    items: plot.data
+			}
+		    })));
+*/
 		    topic.publish("addDataSet", plot);
 		    topic.publish("addOption", plot);
 		});
