@@ -25,10 +25,14 @@ require(["dijit/registry",
 	 "dijit/form/ValidationTextBox",
 	 "dojo/_base/xhr",
 	 "dojo/request",
+	 "dojox/charting/axis2d/Default",
+	 "dojo/store/DataStore",
+	 "dojox/layout/TableContainer",
+	 "dijit/form/ToggleButton",
 	 "dojo/domReady!"
 ], function (registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler,
 	     on, TimeTextBox, topic, domConstruct, query, style, Calendar, DropDownButton, DropDownMenu, MenuItem, 
-	     Chart, theme, Lines, ChartWidgit, funct, VTB, xhr, request) {
+	     Chart, theme, Lines, ChartWidgit, funct, VTB, xhr, request, Default, DataStore, TableContainer, ToggleButton) {
     //create the BorderContainer and attach it to our appLayout div
     var appLayout = new BorderContainer({
 	design: "headline"
@@ -49,18 +53,35 @@ require(["dijit/registry",
     
     //----------------tabs-----------------------------------------------------------------------------------------------
     var display = new ContentPane({
-        title: "Display"
+        title: "Display", id: "display"
     });
 
     var download = new ContentPane({
-        title: "Download"
+        title: "Download", id: "download"
     });
     var time = new ContentPane({
-        title: "Time"
+        title: "Time", id: "time"
     });
     
 
     //----------------content-----------------------------------------------------------------------------------------------
+    var chartOptions = new ContentPane({
+	id: "chartOptions"
+    });
+
+/*    var optionsGrid = new DataGrid({
+	query: { id: "optionsGrid"},
+	structure: [
+	    {name: "Title", field: "title", width: "60px"},
+	    {name: "On/Off", field: "on/off", width: "60px"}
+	]
+    });
+*/
+    var optionsGrid = new TableContainer({
+	id: "optionsGrid",
+	cols: 2
+    });
+
     var dataMenu = new DropDownMenu({style: "display: none;"});
     var imageMenu = new DropDownMenu({style: "display: none;"});
 
@@ -80,7 +101,7 @@ require(["dijit/registry",
 
     var downloadDataPane = new ContentPane({
 	title: "size",
-	id: "downloadDataPane", class: "downloadPane",
+	id: "downloadDataPane", "class": "downloadPane",
 	content: downloadData
     });
 
@@ -157,22 +178,12 @@ require(["dijit/registry",
 	id: "timeUpdateButton",
 	label: "Update Time"
     });
-    
-    var setMaker = new Button({
-	label: "Add Set",
-	id: "setMaker"
 
-    });
-    var setDestroyer = new Button({
-	label: "Remove Set",
-	id: "setDestroyer"
-    });
 
     //=====--building the dom--=======
-    display.addChild(setMaker);
-    display.addChild(setDestroyer);
-
-
+    chartOptions.addChild(optionsGrid);
+    display.addChild(chartOptions);
+    
     time.addChild(calendar);
     time.addChild(startTime);
     time.addChild(endTime);
@@ -224,15 +235,35 @@ require(["dijit/registry",
     }(0);
 
     var graphList = [];
-    on(setMaker, "click", labelAndPublishSet);
+
     on(timeUpdateButton, "click", function (e) {topic.publish("dateChange");});    
-    on(setDestroyer, "click", function (e) {
+
+/*    on(setDestroyer, "click", function (e) {
 	if (graphList.length !== 0) {
 	    topic.publish("removePlot", graphList[0].id);
 	}
-    });
+    }); 
+*/
     on(window, "resize", function (e) {topic.publish("rsize");});
     //------------event handling -------------- ==========
+
+    topic.subscribe("addOption", function (plotObject) {
+	optionsGrid.addChild(
+	    new ToggleButton({
+		showLabel: true,
+		checked: true,
+		label: plotObject.title,
+		onChange: function (val) { 
+		    if (val) {
+			topic.publish("addDataSet", plotObject);
+		    }
+		    else {
+			topic.publish("removePlot", plotObject);
+		    }
+		}
+	    })
+	);
+    });
 
     topic.subscribe("rsize", function (e) {
 	var graphs = query(".graph");
@@ -252,11 +283,11 @@ require(["dijit/registry",
 	alert("Date Change");
     });
 
-    topic.subscribe("removePlot", function (plotName) {//untested
-	var plot = funct.filter(graphList, function (plot) {return plot.id === plotName;})[0];
+    topic.subscribe("removePlot", function (plotObject) {
+	var plot = funct.filter(graphList, function (plot) {return plot.id === plotObject.title;})[0];
 	if (!(typeof plot === "undefined" )){
 	    plot.destroy();
-	    graphList = funct.filter(graphList, function (plot) {return !(plot.id === plotName);});
+	    graphList = funct.filter(graphList, function (plot) {return !(plot.id === plotObject.title);});
 	}
 	
 	topic.publish("rsize");
@@ -273,32 +304,42 @@ require(["dijit/registry",
 	
 	graphHolder.addChild(holder);
 	graphList.push(holder);
-
-	holder = holder.chart
+	
+	holder.chart
 	    .addPlot("default", {type: Lines})
+	    .addAxis(plotObject.xAxisName, {includeZero: true, fixLower: "major", fixUpper: "major"})
+	    .addAxis(plotObject.yAxisName, {vertical: true, fixLower: "major", fixUpper: "major"})
 	    .setTheme(theme);
-	funct.forEach(plotObject.series)
-	    .addSeries("Series A", [1,2,3,4,5,6,7])
-	    .addSeries("Series B", [7,6,5,4,3,2,1]);
-
-
+	funct.forEach(plotObject.series, function (item) {
+/*	    var yValues = funct.map(item.data, function (ele) {
+		return ele[1];
+	    });
+	    var xValues = funct.map(item.data, function (ele) {
+		return ele[0];
+	    }); 
+*/
+	    holder.chart.addSeries(item.label, item.data);
+	});
 	topic.publish("rsize");
     });
     // start up and do layout
     appLayout.startup();
 
     //-------------------------dataloading---------------------------------------------------------------------------
-    var data = {};
+
     request.get("testData.json", {
 	handleAs: "json",
 	timeout: 5000
 	}).then( 
 	    function (response) {
-		topic.publish("addDataSet", response.plot);
+		funct.forEach(response.plots, function (plot) {
+		    topic.publish("addDataSet", plot);
+		    topic.publish("addOption", plot);
+		});
 	    },
 	    function (error) {
+		alert(error);
 		console.log(error);
 	    }
 	);
 });
-

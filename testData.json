@@ -1,33 +1,54 @@
-{"plot": {
+{"plots": [{
     "title": "Temperature",
+    "xAxisName": "Time",
+    "yAxisName": "Temperature",
+    "xAxisUnits": "Seconds",
+    "yAxisUnits": "Kelvin",
+    "options": {
+	"axis": "on"
+    },
     "series": [{
-	"xAxisName": "Time",
-	"yAxisName": "Temperature",
-	"xAxisUnits": "Seconds",
-	"yAxisUnits": "Kelvin",
+	"label": "Test",
 	"data": [
-	    [0, 0], 
-	    [1, 1],
-	    [2, 2], 
-	    [3, 3]
-	],
-	"options": {
-	    "axis": "on"
-	}
+	    {"x":0, "y":-1}, 
+	    {"x":1, "y":1},
+	    {"x":2, "y":-1}, 
+	    {"x":3, "y":1}
+	]
     },{
-	"xAxisName": "Time",
-	"yAxisName": "Temperature",
-	"xAxisUnits": "Seconds",
-	"yAxisUnits": "Kelvin",
+	"label": "Experiment",
 	"data": [
-	    [0, 3],
-	    [1, 2],
-	    [2, 1],
-	    [3, 0]
-	],
-	"options": {
-	    "axis": "on"
-	}
-	       }]
-}}
+	    {"x":0, "y":3},
+	    {"x":1, "y":2},
+	    {"x":2, "y":1},
+	    {"x":3, "y":0}
+	]
+    }]
+},{ 
+    "title": "Pressure",
+    "xAxisName": "Time",
+    "yAxisName": "Pressure",
+    "xAxisUnits": "Seconds",
+    "yAxisUnits": "kPa",
+    "options": {
+	"axis": "on"
+    },
+    "series": [{
+	"label": "Test",
+	"data": [
+	    {"x":0, "y":-1}, 
+	    {"x":1, "y":1},
+	    {"x":2, "y":-1}, 
+	    {"x":3, "y":1}
+	]
+    },{
+	"label": "Experiment",
+	"data": [
+	    {"x":-1, "y":3},
+	    {"x":1, "y":1},
+	    {"x":2, "y":-1},
+	    {"x":3, "y":-3}
+	]
+    }]
+}]}
  
