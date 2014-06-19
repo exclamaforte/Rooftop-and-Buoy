@@ -141,9 +141,7 @@ require(
 	    id: "sameSizeAsCurrent",
 	    label: "Same Size as Current Display"
         });
-        var menuToggler = new Toggler({
-	    node: "controls"
-        });
+
 
         var collapseButton = new Button({
 	    id: "collapseButton"
@@ -236,6 +234,9 @@ require(
         appLayout.addChild(graphHolder);
 
         //=====Button Behavior=====
+        var menuToggler = new Toggler({
+	    node: "controls"
+        });
 
 
         on(collapseButton, "change", function(e) {
@@ -254,6 +255,8 @@ require(
 	    };
 	    return anon;
         }(0);
+	
+
 
         on(timeUpdateButton, "click", function (e) {topic.publish("dateChange", startTime.value, endTime.value);});
 
@@ -291,9 +294,28 @@ require(
 	    });
 	    var charts = registry.byClass("graph");
 	    charts.forEach(function (item) {
-		item.chart.resize();//add support to resize the stuff.
+		item.chart.resize({h:percentage, w:width});//add support to resize the stuff.
 	    });
         });
+
+	function change () {
+	    var hidden = false;
+	    //style.set(dom.byId("controls"), "width", "0px");
+	    //menuToggler.show();
+	    return function () {
+		if (hidden) {
+		    menuToggler.show();
+		} else {
+		    menuToggler.hide();
+		}
+		hidden = !hidden;
+	    };
+	};
+	var changer = change();
+
+	topic.subscribe("toggleControls", function () {
+	    changer();
+	});
 
         topic.subscribe("dateChange", function (startDate, endDate) {
             //always goes back to the server to get data. TODO: have it cashe the data.
@@ -321,6 +343,7 @@ require(
                 //have to remove the splitter crated by the border container
             });
         });
+
         topic.subscribe("addDataSet", function (plotObject) { //add data field later with graphs. add highlight plugin. Selection can be done with moveslice, charting events can be used to make it stand out.
 	    
 	    var holder = new ChartWidgit({
@@ -382,7 +405,8 @@ require(
 	        }
 	    );
         });
-        
+
+        on(dom.byId("graphHolder_splitter"), "click", function () {topic.publish("toggleControls");});
         topic.publish("getData", startTime.value, endTime.value);
     });
 

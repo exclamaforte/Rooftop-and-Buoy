@@ -54,3 +54,7 @@ svg {
   border-width: 3px;
   border-color: blue;
 }
+
+#graphHolder_splitter {
+  color = red;
+}
