@@ -43,15 +43,15 @@ require(
 	registry.byClass = function (className) {
 	    return funct.filter(registry.toArray(), function (item) {
 		return item.class === className.toString();
-	    });
-	};
+	    });	
+vt};
         //create the BorderContainer and attach it to our appLayout div
         var appLayout = new BorderContainer({
 	    design: "headline"
         }, "appLayout");
 
         //------------------sections------------------------------------------------------------------------------------------
-        var controls = new TabContainer({
+        var controls = new ContentPane({
 	    region: "center",
 	    id: "controls",
 	    tabPosition: "top"
@@ -65,21 +65,17 @@ require(
         
         //----------------tabs-----------------------------------------------------------------------------------------------
         var display = new ContentPane({
-            title: "Display", id: "display"
+            title: "Display", id: "display", 
+	    "class": "controlDiv"
         });
 
-        var download = new ContentPane({
-            title: "Download", id: "download"
-        });
         var time = new ContentPane({
-            title: "Time", id: "time"
+            title: "Time", id: "time",
+	    "class": "controlDiv"
         });
         
 
         //----------------content-----------------------------------------------------------------------------------------------
-        var chartOptions = new ContentPane({
-	    id: "chartOptions"
-        });
 
         /*    var optionsGrid = new DataGrid({
 	 query: { id: "optionsGrid"},
@@ -142,24 +138,14 @@ require(
 	    label: "Same Size as Current Display"
         });
 
-
-        var collapseButton = new Button({
-	    id: "collapseButton"
+        var toggleButton = new Button({
+	    id: "toggleButton"
         });
-        var showButton = new Button({
-	    id: "showButton"
-        });
-        
-        /*    var grid = new DataGrid({
-	 structure: [{ noscroll:true, defaultCell: {width: "84px"}, 
-	 cells: [
-	 {name: "first Name",}]}]
-         });
-         */
 
         var startTime = new TimeTextBox({
 	    id: "startTime",
 	    value: new Date(),
+	    regExp:"^([0-2][0-9]):([0-9][0-9]):([0-9][0-9])$",
 	    constraints: {
 	        timePattern: 'HH:mm:ss',
 	        clickableIncrement: 'T00:15:00',
@@ -170,7 +156,7 @@ require(
 
         var endTime = new TimeTextBox({
 	    id: "endTime",
-	    value: new Date(),
+	    value: date.add(new Date(), "minute", 15),
 	    constraints: {
 	        timePattern: 'HH:mm:ss',
 	        clickableIncrement: 'T00:15:00',
@@ -191,8 +177,8 @@ require(
 
 
         //=====--building the dom--=======
-        chartOptions.addChild(optionsGrid);
-        display.addChild(chartOptions);
+
+	display.addChild(optionsGrid);
         
         time.addChild(calendar);
         time.addChild(startTime);
@@ -223,13 +209,12 @@ require(
         downloadImagePane.addChild(downloadSizeX);
         downloadImagePane.addChild(downloadSizeY);
         downloadImagePane.addChild(downloadImage);
-        download.addChild(downloadImagePane);
-        download.addChild(downloadDataPane);
 
         controls.addChild(display);
-        controls.addChild(download);
+        controls.addChild(downloadImagePane);
+	controls.addChild(downloadDataPane);
         controls.addChild(time);
-
+	graphHolder.addChild(toggleButton);
         appLayout.addChild(controls);
         appLayout.addChild(graphHolder);
 
@@ -238,27 +223,27 @@ require(
 	    node: "controls"
         });
 
+	on(sameSizeAsCurrent, "click", function (e) {
+	    topic.publish("updateImageSize", style.get("graphHolder", "height"), style.get("graphHolder", "width"));
+	});
 
-        on(collapseButton, "change", function(e) {
-	    menuToggler.hide();
-        });
-
-        on(showButton, "change", function(e) {
-	    menuToggler.show();
+        on(toggleButton, "click", function(e) {
+	    topic.publish("toggleControls");
         });
 
         var labelAndPublishSet = function (start) {
 	    var label = start;
-	    var anon = function () {
+	    return function () {
 	        topic.publish("addDataSet", label.toString());
 	        label= label+1;
 	    };
-	    return anon;
         }(0);
 	
 
 
-        on(timeUpdateButton, "click", function (e) {topic.publish("dateChange", startTime.value, endTime.value);});
+        on(timeUpdateButton, "click", function (e) {
+	    topic.publish("dateChange", startTime.value, endTime.value);
+	});
 
         on(window, "resize", function (e) {topic.publish("rsize");});
         //------------event handling -------------- ==========
@@ -269,6 +254,7 @@ require(
 		    showLabel: true,
 		    checked: true,
 		    label: plotObject.title + " - On",
+		    id: plotObject.title + "Toggle",
 		    onChange: function (val) { 
 		        if (val) {
 			    this.set("label", plotObject.title + " - On");
@@ -298,20 +284,21 @@ require(
 	    });
         });
 
-	function change () {
+	var changer = function () {
 	    var hidden = false;
-	    //style.set(dom.byId("controls"), "width", "0px");
-	    //menuToggler.show();
 	    return function () {
 		if (hidden) {
 		    menuToggler.show();
+		    style.set("graphHolder", "width", "95%");
+		    topic.publish("resize");
 		} else {
 		    menuToggler.hide();
+		    style.set("graphHolder", "width", "75%");
+		    topic.publish("resize");
 		}
 		hidden = !hidden;
 	    };
-	};
-	var changer = change();
+	}();
 
 	topic.subscribe("toggleControls", function () {
 	    changer();
@@ -370,6 +357,10 @@ require(
                  */
 	        holder.chart.addSeries(item.label, item.data);
 	    });
+	    if (dom.byId(plotObject.title + "Toggle") === null) {
+		topic.publish("addOption", plotObject);
+	    }
+
 	    var tip = new Tooltip(holder.chart, "default");
 	    var mag = new Magnify(holder.chart, "default");
 	    holder.chart.render();
@@ -396,7 +387,7 @@ require(
 		         })));
                          */
 		        topic.publish("addDataSet", plot);
-		        topic.publish("addOption", plot);
+
 		    });
 	        },
 	        function (error) {
@@ -406,7 +397,6 @@ require(
 	    );
         });
 
-        on(dom.byId("graphHolder_splitter"), "click", function () {topic.publish("toggleControls");});
         topic.publish("getData", startTime.value, endTime.value);
     });
 

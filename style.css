@@ -8,18 +8,19 @@ html, body {
 
 #appLayout {
   height: 100%;
+  width: 100%;
 }
 #leftCol {
   width: 30%;
 }
 #controls {
-  width:231px;
+  width:200px;
 }
 
 #graphHolder {
   padding:0px;
   border:0px;
-  width:70%;
+  width:75%;
   height:100%;
 }
 
@@ -50,11 +51,24 @@ svg {
   height: auto;
 }
 
-.downloadPane {
-  border-width: 3px;
-  border-color: blue;
+#graphHolder_splitter {
+  color: red;
 }
 
-#graphHolder_splitter {
-  color = red;
+#display{
+  padding: 0px;
+  border: 0px;
+  margin: 0px;
+}
+
+#downloadImagePane{
+  padding: 0px;
+  border: 0px;
+  margin: 0px;
+}
+
+#downloadDataPane{
+  padding: 0px;
+  border: 0px;
+  margin: 0px;
 }
