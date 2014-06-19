@@ -145,7 +145,7 @@ vt};
         var startTime = new TimeTextBox({
 	    id: "startTime",
 	    value: new Date(),
-	    regExp:"^([0-2][0-9]):([0-9][0-9]):([0-9][0-9])$",
+	    regExp:"^(0[0-9]|[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$",
 	    constraints: {
 	        timePattern: 'HH:mm:ss',
 	        clickableIncrement: 'T00:15:00',
@@ -157,6 +157,7 @@ vt};
         var endTime = new TimeTextBox({
 	    id: "endTime",
 	    value: date.add(new Date(), "minute", 15),
+	    regExp:"^(0[0-9]|[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$",
 	    constraints: {
 	        timePattern: 'HH:mm:ss',
 	        clickableIncrement: 'T00:15:00',
