@@ -371,12 +371,22 @@ vt};
         appLayout.startup();
 
         //-------------------------dataloading---------------------------------------------------------------------------
-        var dataHolder = [];
+        var dataTypes = {
+	    airTemp : "t",
+	    relativeHumidity: "rh",
+	    dewPoint: "td"
+	};
+
         topic.subscribe("getData", function (start, end) {
+	    var URL = "http://metobs.ssec.wisc.edu/app/rig/tower/data/json?symbols=";
+	    funct.forEach(dataTypes, function (item) {
+		URL = URL + item + ":";
+	    });
+	    URL = URL.slice(0, -1);
+	    URL = URL + "&";
             request.get("testData.json", {
 	        handleAs: "json",
-	        timeout: 5000,
-                data: [start, end] //sends back the data slices. If undefined, send default data
+	        timeout: 5000
 	    }).then( 
 	        function (response) {
                     topic.publish("removePlots");
