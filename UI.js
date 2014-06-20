@@ -44,7 +44,7 @@ require(
 	    return funct.filter(registry.toArray(), function (item) {
 		return item.class === className.toString();
 	    });	
-vt};
+	};
         //create the BorderContainer and attach it to our appLayout div
         var appLayout = new BorderContainer({
 	    design: "headline"
@@ -58,7 +58,7 @@ vt};
         });
         
         var graphHolder = new ContentPane({
-            region: "right",
+	    region: "right",
             id: "graphHolder", "class": "centerPanel",
             splitter: true, style:"height: 100%;"
         });
@@ -167,8 +167,8 @@ vt};
         });
         
         var calendar = new Calendar({
-	    id: "calendar"
-
+	    id: "calendar",
+	    value: new Date()
         });
         
         var timeUpdateButton = new Button({
@@ -242,8 +242,14 @@ vt};
 	
 
 
-        on(timeUpdateButton, "click", function (e) {
-	    topic.publish("dateChange", startTime.value, endTime.value);
+        on(timeUpdateButton, "click", function () {
+	    var st = new Date(calendar.value.getFullYear(), calendar.value.getMonth(), calendar.value.getDay(),
+				 startTime.value.getHours(), startTime.value.getMinutes(), 
+				 startTime.value.getMinutes(), startTime.value.getSeconds(), 0);
+	    var et = new Date(calendar.value.getFullYear(), calendar.value.getMonth(), calendar.value.getDay(),
+				 startTime.value.getHours(), startTime.value.getMinutes(), 
+				 startTime.value.getMinutes(), startTime.value.getSeconds(), 0);				 
+	    topic.publish("dateChange", st, et);
 	});
 
         on(window, "resize", function (e) {topic.publish("rsize");});
@@ -290,11 +296,11 @@ vt};
 	    return function () {
 		if (hidden) {
 		    menuToggler.show();
-		    style.set("graphHolder", "width", "95%");
+//		    style.set("graphHolder", "width", "95%");
 		    topic.publish("resize");
 		} else {
 		    menuToggler.hide();
-		    style.set("graphHolder", "width", "75%");
+//		    style.set("graphHolder", "width", "75%");
 		    topic.publish("resize");
 		}
 		hidden = !hidden;
@@ -309,8 +315,12 @@ vt};
             //always goes back to the server to get data. TODO: have it cashe the data.
             //should the refreshing of plots be done here or after the new data? 
             //Probably after the new data because we dont want there to be lag.
-            topic.publish("getData", startDate, endDate);
-            topic.publish("refreshData");
+	    if (date.compare(startDate, endDate) < 0) {
+		topic.publish("getData", startDate, endDate);
+	    } else { 
+		alert("Start time must be before End Time..");
+	    }
+	    
         });
 
         topic.subscribe("removePlot", function (plotObject) {
@@ -371,8 +381,9 @@ vt};
         appLayout.startup();
 
         //-------------------------dataloading---------------------------------------------------------------------------
-        var dataHolder = [];
+        var dataToGet = {Temperature: "t"," "rh", "td", "spd"};//make associative array.
         topic.subscribe("getData", function (start, end) {
+	    var requestURL = 
             request.get("testData.json", {
 	        handleAs: "json",
 	        timeout: 5000,

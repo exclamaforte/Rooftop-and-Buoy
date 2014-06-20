@@ -1,0 +1,4 @@
+1. make mvc with data on website
+2. get rid of the border container
+
+
