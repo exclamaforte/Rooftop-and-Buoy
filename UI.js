@@ -166,6 +166,34 @@ require(
 	    }
         });
         
+        var startDate = new TimeTextBox({
+	    id: "startDate",
+	    value: new Date(),
+	    regExp:"^([1-9]|0[1-9]|1[0-2])/([0-2][0-9]|3[0-1]|[0-9])/(199[0-9]|200[0-9]|201[0-4])$",
+	    invalidMessage: "Format is mm/dd/yyyy",
+	    constraints: {
+		selector: "date",
+	        timePattern: 'LL/dd/yyyy'
+	        //clickableIncrement: '00/15/00',
+	        //visibleIncrement: '00/15/00',
+	        //visibleRange: '01/00/00'
+	    }
+	});
+
+        var endDate = new TimeTextBox({
+	    id: "endDate",
+	    value: new Date(),
+	    regExp:"^([1-9]|0[1-9]|1[0-2])/([0-2][0-9]|3[0-1]|[0-9])/(199[0-9]|200[0-9]|201[0-4])$",
+	    invalidMessage: "Format is mm/dd/yyyy",
+	    constraints: {
+		selector: "date",
+	        timePattern: 'LL/dd/yyyy'
+	        //clickableIncrement: '00/15/00',
+	        //visibleIncrement: '00/15/00',
+	        //visibleRange: '01/00/00'
+	    }
+        });
+
         var calendar = new Calendar({
 	    id: "calendar",
 	    value: new Date()
@@ -182,6 +210,8 @@ require(
 	display.addChild(optionsGrid);
         
         time.addChild(calendar);
+	time.addChild(startDate);
+	time.addChild(endDate);
         time.addChild(startTime);
         time.addChild(endTime);
         time.addChild(timeUpdateButton);
@@ -243,10 +273,10 @@ require(
 
 
         on(timeUpdateButton, "click", function () {
-	    var st = new Date(calendar.value.getFullYear(), calendar.value.getMonth(), calendar.value.getDay(),
+	    var st = new Date(startDate.value.getFullYear(), startDate.value.getMonth(), startDate.value.getDay(),
 				 startTime.value.getHours(), startTime.value.getMinutes(), 
 				 startTime.value.getMinutes(), startTime.value.getSeconds(), 0);
-	    var et = new Date(calendar.value.getFullYear(), calendar.value.getMonth(), calendar.value.getDay(),
+	    var et = new Date(endDate.value.getFullYear(), endDate.value.getMonth(), endDate.value.getDay(),
 				 endTime.value.getHours(), endTime.value.getMinutes(), 
 				 endTime.value.getMinutes(), endTime.value.getSeconds(), 0);				 
 	    topic.publish("dateChange", st, et);
@@ -317,6 +347,7 @@ require(
             //Probably after the new data because we dont want there to be lag.
 	    if (date.compare(startDate, endDate) < 0 ) {
 		if (date.compare(endDate, new Date()) <= 0) {
+		    if (date)
 		    topic.publish("getData", startDate, endDate);
 		} else {
 		    alert("The sensor does not posses the ability to see into the future.");
@@ -378,7 +409,7 @@ require(
 	    graphHolder.addChild(holder);
 	    
 	    holder.chart
-	        .addPlot("default", {type: Lines, markers:false, tension: "S", lines: true})
+	        .addPlot("default", {type: Lines, markers:true, tension: "S", lines: true})
 	        .addAxis("x", {fixLower: "major", fixUpper: "major", labelFunc: formatNumberAsTime})
 	        .addAxis("y", {vertical: true, fixLower: "major", fixUpper: "major"})
 	        .setTheme(theme);
@@ -389,8 +420,8 @@ require(
 		topic.publish("addOption", plotObject);
 	    }
 
-//	    var tip = new Tooltip(holder.chart, "default");
-//	    var mag = new Magnify(holder.chart, "default");
+	    var tip = new Tooltip(holder.chart, "default");
+	    var mag = new Magnify(holder.chart, "default");
 	    holder.chart.render();
 	    topic.publish("rsize");
         });
@@ -429,6 +460,9 @@ require(
 		fin += intr.toString();
 	    }
 	    return fin;
+	}
+	function averagePoints (plotObject, period) {
+	    funct.map
 	}
         topic.subscribe("getData", function (start, end) {
 	    var URL = "http://metobs.ssec.wisc.edu/app/rig/tower/data/json?symbols=";
