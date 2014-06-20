@@ -247,8 +247,8 @@ require(
 				 startTime.value.getHours(), startTime.value.getMinutes(), 
 				 startTime.value.getMinutes(), startTime.value.getSeconds(), 0);
 	    var et = new Date(calendar.value.getFullYear(), calendar.value.getMonth(), calendar.value.getDay(),
-				 startTime.value.getHours(), startTime.value.getMinutes(), 
-				 startTime.value.getMinutes(), startTime.value.getSeconds(), 0);				 
+				 endTime.value.getHours(), endTime.value.getMinutes(), 
+				 endTime.value.getMinutes(), endTime.value.getSeconds(), 0);				 
 	    topic.publish("dateChange", st, et);
 	});
 
@@ -315,10 +315,14 @@ require(
             //always goes back to the server to get data. TODO: have it cashe the data.
             //should the refreshing of plots be done here or after the new data? 
             //Probably after the new data because we dont want there to be lag.
-	    if (date.compare(startDate, endDate) < 0) {
-		topic.publish("getData", startDate, endDate);
+	    if (date.compare(startDate, endDate) < 0 ) {
+		if (date.compare(endDate, new Date()) <= 0) {
+		    topic.publish("getData", startDate, endDate);
+		} else {
+		    alert("The sensor does not posses the ability to see into the future.");
+		}
 	    } else { 
-		alert("Start time must be before End Time..");
+		alert("Start time must before end time.");
 	    }
 	    
         });
@@ -329,10 +333,10 @@ require(
             })[0];
 	    if (!(typeof plot === "undefined" )){
 	        plot.destroy();
-	    }
-	    
+	    }	    
 	    topic.publish("rsize");
         });
+
         topic.subscribe("removePlots", function () {
             query(".graph").forEach( function(item) {
                 domConstruct.destroy(item);
@@ -341,12 +345,32 @@ require(
                 //have to remove the splitter crated by the border container
             });
         });
+	
+	function formatNumberAsTime(number) {
+	    var ret = "";
+	    if (number < 100000) {
+		ret += "0";
+	    }
+	    if (number < 10000) {
+		ret += "0";
+	    }
+	    if (number < 1000) {
+		ret += "0";
+	    }
+	    if (number < 100) {
+		ret += "0";
+	    }
+	    if (number < 10) {
+		ret += "0";
+	    }
+	    ret += number.toString();
+	    return ret[0] + ret[1] + ":" + ret[2] + ret[3] + ":" + ret[4] + ret[5];
+	}
 
-        topic.subscribe("addDataSet", function (plotObject) { //add data field later with graphs. add highlight plugin. Selection can be done with moveslice, charting events can be used to make it stand out.
-	    
+        topic.subscribe("addDataSet", function (plotObject) { 	    
 	    var holder = new ChartWidgit({
 	        title: plotObject.title,
-	        margins: 0,
+		margins: 0,
 	        id: plotObject.title, "class": "graph",
 	        theme: theme
 	    });
@@ -354,26 +378,19 @@ require(
 	    graphHolder.addChild(holder);
 	    
 	    holder.chart
-	        .addPlot("default", {type: Lines, markers:true, tension: "S", lines: true})
-	        .addAxis("x", {includeZero: true, fixLower: "major", fixUpper: "major"})
+	        .addPlot("default", {type: Lines, markers:false, tension: "S", lines: true})
+	        .addAxis("x", {fixLower: "major", fixUpper: "major", labelFunc: formatNumberAsTime})
 	        .addAxis("y", {vertical: true, fixLower: "major", fixUpper: "major"})
 	        .setTheme(theme);
 	    funct.forEach(plotObject.series, function (item) {
-                /*	    var yValues = funct.map(item.data, function (ele) {
-		 return ele[1];
-	         });
-	         var xValues = funct.map(item.data, function (ele) {
-		 return ele[0];
-	         }); 
-                 */
-	        holder.chart.addSeries(item.label, item.data);
+	        holder.chart.addSeries("wee", item);
 	    });
 	    if (dom.byId(plotObject.title + "Toggle") === null) {
 		topic.publish("addOption", plotObject);
 	    }
 
-	    var tip = new Tooltip(holder.chart, "default");
-	    var mag = new Magnify(holder.chart, "default");
+//	    var tip = new Tooltip(holder.chart, "default");
+//	    var mag = new Magnify(holder.chart, "default");
 	    holder.chart.render();
 	    topic.publish("rsize");
         });
@@ -381,40 +398,73 @@ require(
         appLayout.startup();
 
         //-------------------------dataloading---------------------------------------------------------------------------
-<<<<<<< HEAD
+
         var dataTypes = {
 	    airTemp : "t",
 	    relativeHumidity: "rh",
-	    dewPoint: "td"
+	    dewPoint: "td",
+	    wind_speed: "spd"
 	};
 
+	function stringDate (date) {
+	    var fin = "";
+	    fin += date.getUTCFullYear();
+	    fin += "-";
+	    fin += twoDigitString(date.getUTCMonth());
+	    fin += "-";
+	    fin += twoDigitString(date.getUTCDate());
+	    fin += "+";
+	    fin += twoDigitString(date.getUTCHours());
+	    fin += ":";
+	    fin += twoDigitString(date.getUTCMinutes());
+	    fin += ":";
+	    fin += twoDigitString(date.getUTCSeconds());
+	    return fin;
+	}
+	function twoDigitString (intr) {
+	    var fin = "";
+	    if (intr < 10) {
+		fin += "0" + intr.toString();
+	    } else {
+		fin += intr.toString();
+	    }
+	    return fin;
+	}
         topic.subscribe("getData", function (start, end) {
 	    var URL = "http://metobs.ssec.wisc.edu/app/rig/tower/data/json?symbols=";
 	    funct.forEach(dataTypes, function (item) {
 		URL = URL + item + ":";
 	    });
 	    URL = URL.slice(0, -1);
-	    URL = URL + "&";
-=======
-        var dataToGet = {Temperature: "t"," "rh", "td", "spd"};//make associative array.
-        topic.subscribe("getData", function (start, end) {
-	    var requestURL = 
->>>>>>> 15f5287080dc270644e4a10bbf12a71f6b532dca
-            request.get("testData.json", {
+	    URL = URL + "&begin=" + stringDate(start) + "&end=" + stringDate(end);
+	    console.log(URL);
+            request.get("realData.json", {
 	        handleAs: "json",
 	        timeout: 5000
 	    }).then( 
 	        function (response) {
+		    /* might want to alter the data into a better form if having performance problems.
+		    var alteredData = {};
+		    alteredData = response.forEach(response.symbols, function (item) {
+			alteredData.
+		    });
+		    */
                     topic.publish("removePlots");
-		    funct.forEach(response.plots, function (plot) {
-                        /*		    dataHolder.push(new ObservableStore (new MemoryStore({
-			 data: {//need to add more information as the usage becomes clear
-			 items: plot.data
-			 }
-		         })));
-                         */
-		        topic.publish("addDataSet", plot);
+		    response.stamps = funct.map(response.stamps, function (item) { 
+			return item.split(" ")[1].replace(/:/g, "");
+		    });
 
+		    funct.forEach(response.symbols, function (pltName) {
+			var index = response.symbols.indexOf(pltName);
+			
+			var plotObject = {
+			    title: pltName,
+			    series: [funct.map(response.data, function (set) {
+				var index2 = response.data.indexOf(set); //for loop might be faster because dont have to index the set
+				return {"x": response.stamps[index2], "y": set[index]};
+			    })]
+			};
+		        topic.publish("addDataSet", plotObject);
 		    });
 	        },
 	        function (error) {
