@@ -1,4 +1,19 @@
-1. make mvc with data on website
-2. get rid of the border container
+//2. get rid of the border container
+TODO: Generate tests plots for: 1 2 3 6 12 18 24 hours
+TODO: and axis 
+        Tower:
+                Air Temperature/Dewpoint
+                Pressure
+                WindSpeed
+                WindDirection
+                Accumulated Precipitation
+                Solar Flux
 
+        Buoy:
+                Air Temperature/Dewpoint
+                WindSpeed
+                WindDirection
+                WaterTemperature @ 0, 1, 5, 10, 15, 20 meters
 
+TODO: Learn stacked graphs
+TODO: figure out vertical bar
