@@ -17,3 +17,13 @@ TODO: and axis
 
 TODO: Learn stacked graphs
 TODO: figure out vertical bar
+
+daily goals:
+1. get averaging to reduce points working
+2. fix x axis
+3. fix x scale
+4. investigate bar mechanisms
+   stock has way to do that, and can clone the repo off of github.
+5. add preset and custom time menu
+6. refactor
+
