@@ -15,9 +15,22 @@ require(
      "dojox/charting/action2d/Tooltip",
      "dojox/charting/action2d/Magnify",
      "dojo/request",
+     "dojox/charting/action2d/MouseIndicator",
+     "dojo/ready",
+     "dojo/request/script",
      "dojo/domReady!"
-    ], function (dom, on, topic, style, query, registry, ToggleButton, date, funct, domConstruct, ChartWidgit, theme, Lines, Tooltip, Magnify, request) {
+    ], function (dom, on, topic, style, query, registry, ToggleButton, date, funct, domConstruct, 
+		 ChartWidgit, theme, Lines, Tooltip, Magnify, request, Indicator, ready, script) {
 
+	on(registry.byId("timeOptionsSelect"), "change", function (e) {
+	    var value = registry.byId("timeOptionsSelect").value;
+	    if (value === -1) {
+		registry.byId("customTimeToggler").show();
+	    } else {
+		registry.byId("customTimeToggler").hide();
+		topic.publish("dateChange", date.add(new Date(), "hour", -1 * value), new Date());
+	    }
+	});
 	on(dom.byId("sameSizeAsCurrent"), "click", function (e) {
 	    topic.publish("updateImageSize", style.get("graphHolder", "height"), style.get("graphHolder", "width"));
 	});
@@ -94,7 +107,8 @@ require(
 	topic.subscribe("removeOptions", function () {
 	    query(".option").forEach( function(item) {
                 domConstruct.destroy(item);
-                registry.remove(item.attributes.widgetid);
+                registry.remove(item.attributes.widgetid.value);
+                registry.remove(item);
 	    });
 	});
         topic.subscribe("dateChange", function (sD, eD) {
@@ -164,10 +178,13 @@ require(
 	    registry.byId("graphHolder").addChild(holder);
 	    
 	    holder.chart
-	        .addPlot("default", {type: Lines, markers:true, tension: "S", lines: true})
+	        .addPlot("default", {type: Lines, markers:false, tension: "S", lines: true})
 	        .addAxis("x", {fixLower: "major", fixUpper: "major", labelFunc: formatNumberAsTime})
 	        .addAxis("y", {vertical: true, fixLower: "major", fixUpper: "major"})
 	        .setTheme(theme);
+	    holder.chart.title = plotObject.title;
+	    holder.chart.titleGap = 10;
+	    holder.chart.titleFont = "15pt";
 	    funct.forEach(plotObject.series, function (item) {
 	        holder.chart.addSeries("wee", item);
 	    });
@@ -175,15 +192,19 @@ require(
 		topic.publish("addOption", plotObject);
 	    }
 
+	    var displayFunction =  function (firstDataPoint, secondDataPoint, fixed, precision) {
+		return "(" + formatNumberAsTime(firstDataPoint.x) + "," + firstDataPoint.y + ")";
+	    };
 	    var tip = new Tooltip(holder.chart, "default");
 	    var mag = new Magnify(holder.chart, "default");
+	    var prec = 0.1;
+	    var interactor = new Indicator(holder.chart, "default", { //have to remember to change series
+		dualIndicator: true, series: "wee", precision: prec, labelFunc: displayFunction
+	    });
 	    holder.chart.render();
 	    topic.publish("rsize");
         });
-	
-	topic.subscribe("updateDisplayingPlots", function () {
-	    
-	});
+
         //-------------------------dataloading---------------------------------------------------------------------------
 
         var dataTypes = {
@@ -220,6 +241,7 @@ require(
 	function averagePoints (plotObject, period) { //period is the number of points that are being averaged
 	    //funct.map;
 	}
+
         topic.subscribe("getData", function (start, end) {
 	    var URL = "http://metobs.ssec.wisc.edu/app/rig/tower/data/json?symbols=";
 	    funct.forEach(dataTypes, function (item) {
@@ -241,7 +263,10 @@ require(
 
 		    funct.forEach(response.symbols, function (pltName) {
 			var index = response.symbols.indexOf(pltName);
-			
+			String.prototype.toProperCase = function () {
+			    return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+			};
+			pltName = pltName.replace("_", " ").toProperCase();
 			var plotObject = {
 			    title: pltName,
 			    series: [funct.map(response.data, function (set) {

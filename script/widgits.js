@@ -36,11 +36,12 @@ require (
      "dojo/store/Memory",
      "dojo/date",
      "dijit/form/DateTextBox",
+     "dijit/form/Select",
      "dojo/domReady!"
     ], function (registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler,
  	         on, TimeTextBox, topic, domConstruct, query, style, Calendar, DropDownButton, DropDownMenu, MenuItem,
 	         Chart, theme, Lines, ChartWidgit, funct, VTB, xhr, request, Default, DataStore, TableContainer,
-                 ToggleButton, Tooltip, Magnify, ObservableStore, MemoryStore, date, DateTextBox) {
+                 ToggleButton, Tooltip, Magnify, ObservableStore, MemoryStore, date, DateTextBox, Select) {
 	registry.byClass = function (className) {
 	    return funct.filter(registry.toArray(), function (item) {
 		return item.class === className.toString();
@@ -54,8 +55,7 @@ require (
         //------------------sections------------------------------------------------------------------------------------------
         var controls = new ContentPane({
 	    region: "center",
-	    id: "controls",
-	    tabPosition: "top"
+	    id: "controls"
         });
         
         var graphHolder = new ContentPane({
@@ -74,8 +74,12 @@ require (
             title: "Time", id: "time",
 	    "class": "controlDiv"
         });
-        
-
+        var timeControls = new ContentPane({
+	    id: "timeControls"
+	});
+	var customTime = new ContentPane({
+	    id: "customTime"
+	});
         //----------------content-----------------------------------------------------------------------------------------------
 
         /*    var optionsGrid = new DataGrid({
@@ -122,16 +126,16 @@ require (
         var downloadSizeX = new VTB({
 	    type: "text",
 	    name: "downloadSizeX", id: "downloadSizeX",
-	    value: "400", 
-	    regExp:"^[0-9]+$",
+	    value: "X Size", 
+	    regExp:"^[0-9]+|X Size$",
 	    style: "width: 100px"
 	    
         });
         var downloadSizeY = new VTB({
 	    type: "text",
 	    name: "downloadSizeY", id: "downloadSizeY",
-	    value: "600", 
-	    regExp:"^[0-9]+$",
+	    value: "Y Size", 
+	    regExp:"^[0-9]+|Y Size$",
 	    style: "width: 100px"
         });
         var sameSizeAsCurrent  = new Button ({
@@ -146,7 +150,8 @@ require (
 
         var startTime = new TimeTextBox({
 	    id: "startTime",
-	    value: new Date(),
+	    value: date.add(new Date(), "minute", -15),
+	    label: date.add(new Date(), "minute", -15).toString(),
 	    regExp:"^(0[0-9]|[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$",
 	    constraints: {
 	        timePattern: 'HH:mm:ss',
@@ -158,7 +163,7 @@ require (
 
         var endTime = new TimeTextBox({
 	    id: "endTime",
-	    value: date.add(new Date(), "minute", 15),
+	    value: new Date(),
 	    regExp:"^(0[0-9]|[0-9]|1[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$",
 	    constraints: {
 	        timePattern: 'HH:mm:ss',
@@ -170,29 +175,43 @@ require (
         
         var startDate = new DateTextBox({
 	    id: "startDate",
-	    value: new Date()
+	    value: new Date(),
+	    style: {
+		width: "100px"
+	    }
 	});
 
         var endDate = new DateTextBox({
 	    id: "endDate",
-	    value: new Date()
+	    value: new Date(),
+	    style: {
+		width: "100px"
+	    }
         });
         
         var timeUpdateButton = new Button({
 	    id: "timeUpdateButton",
 	    label: "Update Time"
         });
-
+	var timeOptionsSelect = new Select({
+	    id: "timeOptionsSelect",
+	    options: [
+		{label: "Past 1 Hours", value: 1},
+		{label: "Past 3 Hours", value: 3},
+		{label: "Past 6 Hours", value: 6},
+		{label: "Past 12 Hours", value: 12},
+		{label: "Past 24 Hours", value: 24},
+		{label: "Custom", value: -1}
+	    ]
+	});
+	var timeAutoUpdate = new CheckBox ({
+	    id:"timeAutoUpdate"
+	});
 
         //=====--building the dom--=======
 
 	display.addChild(optionsGrid);
         
-	time.addChild(startDate);
-	time.addChild(endDate);
-        time.addChild(startTime);
-        time.addChild(endTime);
-        time.addChild(timeUpdateButton);
 
         //constructing the filetype download menu
         dataFileTypes.map(function (item) {	
@@ -219,10 +238,24 @@ require (
         downloadImagePane.addChild(downloadSizeY);
         downloadImagePane.addChild(downloadImage);
 
+
+	timeControls.addChild(timeOptionsSelect);
+	timeControls.addChild(timeAutoUpdate);
+
+	customTime.addChild(startDate);
+	customTime.addChild(endDate);
+        customTime.addChild(startTime);
+        customTime.addChild(endTime);
+        customTime.addChild(timeUpdateButton);
+
+	time.addChild(timeControls);
+	time.addChild(customTime);
+
         controls.addChild(display);
         controls.addChild(downloadImagePane);
 	controls.addChild(downloadDataPane);
         controls.addChild(time);
+
 	graphHolder.addChild(toggleButton);
         appLayout.addChild(controls);
         appLayout.addChild(graphHolder);
@@ -230,7 +263,13 @@ require (
         //=====Button Behavior=====
         var menuToggler = new Toggler({
 	    node: "controls"
+	    
         });
+	var customTimeToggler = new Toggler({
+	    node: "customTime", id:"customTimeToggler"
+	});
+	registry.add(customTimeToggler);
+	customTimeToggler.hide();
 	appLayout.startup();
 
     });
