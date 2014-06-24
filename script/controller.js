@@ -93,11 +93,11 @@ require(
 	    return function () {
 		if (hidden) {
 		    registry.byId("menuToggler").show();
-                    //		    style.set("graphHolder", "width", "95%");
+                    //style.set("graphHolder", "width", "95%");
 		    topic.publish("resize");
 		} else {
 		    registry.byId("menuToggler").hide();
-                    //		    style.set("graphHolder", "width", "75%");
+                    //style.set("graphHolder", "width", "75%");
 		    topic.publish("resize");
 		}
 		hidden = !hidden;
@@ -238,51 +238,55 @@ require(
 	    }
 	    return fin;
 	}
+	//applies a binary function rollfunt to iter with period n
+	funct.rollingApply = function (iter, rollfunct, n) {
+	    
+	};
 	function averagePoints (plotObject, period) { //period is the number of points that are being averaged
-	    //funct.map;
+	    for()
 	}
 
         topic.subscribe("getData", function (start, end) {
-	    var URL = "http://metobs.ssec.wisc.edu/app/rig/tower/data/json?symbols=";
+	    var url = "http://metobs.ssec.wisc.edu/app/rig/tower/data/json";
+	    var q = "symbols=";
 	    funct.forEach(dataTypes, function (item) {
-		URL = URL + item + ":";
+		q = q + item + ":";
 	    });
-	    URL = URL.slice(0, -1);
-	    URL = URL + "&begin=" + stringDate(start) + "&end=" + stringDate(end);
-	    console.log(URL);
+	    q = q.slice(0, -1);
+	    q = q + "&begin=" + stringDate(start) + "&end=" + stringDate(end);
+	    console.log(url + "?"+ q);
             request.get("data/realData.json", {
 	        handleAs: "json",
 	        timeout: 5000
-	    }).then( 
-	        function (response) {
-                    topic.publish("removePlots");
-		    topic.publish("removeOptions");
-		    response.stamps = funct.map(response.stamps, function (item) { 
-			return item.split(" ")[1].replace(/:/g, "");
-		    });
+	    }).then(function (response) {
+                topic.publish("removePlots");
+		topic.publish("removeOptions");
+		response.stamps = funct.map(response.stamps, function (item) { 
+		    return item.split(" ")[1].replace(/:/g, "");
+		});
 
-		    funct.forEach(response.symbols, function (pltName) {
-			var index = response.symbols.indexOf(pltName);
-			String.prototype.toProperCase = function () {
-			    return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
-			};
-			pltName = pltName.replace("_", " ").toProperCase();
-			var plotObject = {
-			    title: pltName,
-			    series: [funct.map(response.data, function (set) {
-				var index2 = response.data.indexOf(set); //for loop might be faster because dont have to index the set
-				return {"x": response.stamps[index2], "y": set[index]};
-			    })]
-			};
-			
-		        topic.publish("addDataSet", plotObject);
-		    });
-	        },
-	        function (error) {
-		    alert(error);
-		    console.log(error);
-	        }
-	    );
+		funct.forEach(response.symbols, function (pltName) {
+		    var index = response.symbols.indexOf(pltName);
+		    String.prototype.toProperCase = function () {
+			return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+		    };
+		    pltName = pltName.replace("_", " ").toProperCase();
+		    var plotObject = {
+			title: pltName,
+			series: [funct.map(response.data, function (set) {
+			    var index2 = response.data.indexOf(set); //for loop might be faster because dont have to index the set
+			    return {"x": response.stamps[index2], "y": set[index]};
+			})]
+		    };
+		    
+		    topic.publish("addDataSet", plotObject);
+		});
+	    },
+	            function (error) {
+			alert(error);
+			console.log(error);
+	            }
+		   );
         });
 
         topic.publish("getData", registry.byId("startTime").value, registry.byId("endTime").value);
