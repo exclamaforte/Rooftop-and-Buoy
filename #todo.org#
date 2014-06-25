@@ -24,6 +24,6 @@ x1. get averaging to reduce points working
 x3. fix x scale
 x4. investigate bar mechanisms
    stock has way to do that, and can clone the repo off of github.
-x5. add preset and custom time menu
+5. add preset and custom time menu
 x6. refactor
 
