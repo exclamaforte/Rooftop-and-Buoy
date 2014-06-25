@@ -1,47 +1,28 @@
 require (
     ["dijit/registry",
      "dijit/layout/BorderContainer",
-     "dijit/layout/TabContainer", 
      "dijit/layout/ContentPane",
      "dijit/form/Button",
      "dijit/form/CheckBox",
-     "dojo/dom",
-     "dojox/grid/DataGrid",
      "dojo/fx/Toggler",
-     "dojo/on",
      "dijit/form/TimeTextBox",
      "dojo/topic",
-     "dojo/dom-construct",
-     "dojo/query",
-     "dojo/dom-style",
-     "dijit/Calendar",
      "dijit/form/DropDownButton",
      "dijit/DropDownMenu",
      "dijit/MenuItem",
-     "dojox/charting/Chart",
-     "dojox/charting/themes/Claro",
-     "dojox/charting/plot2d/Lines",
-     "dojox/charting/widget/Chart",
      "dojox/lang/functional",
      "dijit/form/ValidationTextBox",
-     "dojo/_base/xhr",
-     "dojo/request",
-     "dojox/charting/axis2d/Default",
-     "dojo/store/DataStore",
      "dojox/layout/TableContainer",
-     "dijit/form/ToggleButton",
-     "dojox/charting/action2d/Tooltip",
-     "dojox/charting/action2d/Magnify",
      "dojo/store/Observable",
      "dojo/store/Memory",
      "dojo/date",
      "dijit/form/DateTextBox",
      "dijit/form/Select",
      "dojo/domReady!"
-    ], function (registry, BorderContainer, TabContainer, ContentPane, Button, CheckBox, dom, DataGrid, Toggler,
- 	         on, TimeTextBox, topic, domConstruct, query, style, Calendar, DropDownButton, DropDownMenu, MenuItem,
-	         Chart, theme, Lines, ChartWidgit, funct, VTB, xhr, request, Default, DataStore, TableContainer,
-                 ToggleButton, Tooltip, Magnify, ObservableStore, MemoryStore, date, DateTextBox, Select) {
+    ], function (registry, BorderContainer, ContentPane, Button, CheckBox, Toggler, TimeTextBox, topic, DropDownButton, DropDownMenu, MenuItem,
+	           funct, VTB, TableContainer, date, DateTextBox, Select) {
+
+
 	registry.byClass = function (className) {
 	    return funct.filter(registry.toArray(), function (item) {
 		return item.class === className.toString();
