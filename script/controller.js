@@ -56,22 +56,22 @@ require(
         on(window, "resize", function (e) {topic.publish("rsize");});
         //------------event handling -------------- ==========
 
-        topic.subscribe("addOption", function (plotObject) {
+        topic.subscribe("addOption", function (plotHolder) {
 	    registry.byId("optionsGrid").addChild(
 	        new ToggleButton({
 		    showLabel: true,
 		    checked: true,
-		    label: plotObject.title + " - On",
-		    id: plotObject.title + "Toggle",
+		    label: plotHolder.title + " - On",
+		    id: plotHolder.title + "Toggle",
 		    "class": "option",
 		    onChange: function (val) { 
 		        if (val) {
-			    this.set("label", plotObject.title + " - On");
-			    topic.publish("addDataSet", plotObject);
+			    this.set("label", plotHolder.title + " - On");
+			    topic.publish("addDataSet", plotHolder);
 		        }
 		        else {
-			    this.set("label", plotObject.title + " - Off");
-			    topic.publish("removePlot", plotObject);
+			    this.set("label", plotHolder.title + " - Off");
+			    topic.publish("removePlot", plotHolder);
 		        }
 		    }
 	        })
@@ -127,13 +127,11 @@ require(
 	    
         });
 
-        topic.subscribe("removePlot", function (plotObject) {
-	    var plot = funct.filter(registry.toArray(), function (plot) {
-                return plot.id === plotObject.title;
-            })[0];
+        topic.subscribe("removePlot", function (plotHolder) {
+	    var plot = registry.byId(plotHolder.title);
 	    if (!(typeof plot === "undefined" )){
 	        plot.destroy();
-	    }	    
+	    }
 	    topic.publish("rsize");
         });
 
@@ -151,14 +149,14 @@ require(
 	    return dee.toTimeString().split(" ")[0];
 	}
 
-        topic.subscribe("addDataSet", function (plotObject) { 	    
+        topic.subscribe("addDataSet", function (plotHolder) {
 	    var holder = new ChartWidgit({
-	        title: plotObject.title,
+	        title: plotHolder.title,
 		margins: 0,
-	        id: plotObject.title, "class": "graph",
+	        id: plotHolder.title, "class": "graph",
 	        theme: theme
 	    });
-	    
+
 	    registry.byId("graphHolder").addChild(holder);
 	    
 	    holder.chart
@@ -166,149 +164,35 @@ require(
 	        .addAxis("x", {fixLower: "major", fixUpper: "major", labelFunc: formatDate})
 	        .addAxis("y", {vertical: true, fixLower: "major", fixUpper: "major"})
 	        .setTheme(theme);
-	    holder.chart.title = plotObject.title;
+	    //holder.chart.title = plotArray[0].title;
 	    holder.chart.titleGap = 10;
 	    holder.chart.titleFont = "15pt";
-//	    funct.forEach(plotObject.series, function (item) { //uncomment to support multiple series.
-	    holder.chart.addSeries("wee", plotObject.series);
-//	    });
-	    if (dom.byId(plotObject.title + "Toggle") === null) {
-		topic.publish("addOption", plotObject);
-	    }
 
-	    var dispFunct =  function (firstDataPoint, secondDataPoint, fixed, precision) {
-		return formatDate(firstDataPoint.x.getTime().toString()) + "  ,   " + firstDataPoint.y;
+	    var dispFunct = function (name) { 
+		return function (firstDataPoint, secondDataPoint, fixed, precision) {
+		    return name + " = (" + formatDate(firstDataPoint.x.getTime().toString()) + "  ,   " + firstDataPoint.y.toFixed(2) + ")";
+		};
 	    };
-	    var tip = new Tooltip(holder.chart, "default");
-	    var mag = new Magnify(holder.chart, "default");
 	    var prec = 0.1;
-	    var interactor = new Indicator(holder.chart, "default", { //have to remember to change series
-		dualIndicator: true, series: "wee", precision: prec, labelFunc: dispFunct
+	    var yOffset = 20;
+
+	    funct.forEach(plotHolder.plots, function (seriesObject, index) {
+		//add series to chart
+		holder.chart.addSeries(seriesObject.title, seriesObject.series);
+		//add vertical indicator to chart
+		var interactor = new Indicator(holder.chart, "default", { //have to remember to change series
+		    dualIndicator: true, series: seriesObject.title, precision: prec, labelFunc: dispFunct(seriesObject.title), 
+		    offset: {x: 0, y: index * yOffset}
+		});
 	    });
+		
+
+	    
+	    if (dom.byId(plotHolder.title + "Toggle") === null) {
+		topic.publish("addOption", plotHolder);
+	    }
 	    holder.chart.render();
 	    topic.publish("rsize");
-        });
 
-        //-------------------------dataloading---------------------------------------------------------------------------
-
-        var dataTypes = {
-	    airTemp : "t",
-	    relativeHumidity: "rh",
-	    dewPoint: "td",
-	    wind_speed: "spd"
-	};
-
-	function stringDate (date) {
-	    var fin = "";
-	    fin += date.getUTCFullYear();
-	    fin += "-";
-	    fin += twoDigitString(date.getUTCMonth());
-	    fin += "-";
-	    fin += twoDigitString(date.getUTCDate());
-	    fin += "+";
-	    fin += twoDigitString(date.getUTCHours());
-	    fin += ":";
-	    fin += twoDigitString(date.getUTCMinutes());
-	    fin += ":";
-	    fin += twoDigitString(date.getUTCSeconds());
-	    return fin;
-	}
-	function twoDigitString (intr) {
-	    var fin = "";
-	    if (intr < 10) {
-		fin += "0" + intr.toString();
-	    } else {
-		fin += intr.toString();
-	    }
-	    return fin;
-	}
-
-	funct.filteredMap = function (arry, f, filter) {
-	    return funct.filter(funct.map(arry, f), filter);
-	};
-	//arry is an array, f is a function that takes an array and returns a number, and period is the period that you split the array.
-	funct.rollingFold = function (arry, f, period) {
-	    var stop = arry.length - (arry.length % period);
-	    var fin = funct.filteredMap(arry, function (item, index) {
-		if (index >= stop) {
-		    return f(arry.slice(index));
-		} else {
-		    return f(arry.slice(index, index + period));
-		}
-	    }, function (item, index) {
-		return index % period === 0;
-	    });
-	    return fin;
-	};
-
-	function averagePointsArray (arry) {
-	    if (arry.length === 1) {
-		return arry[0];
-	    }
-	    var hi = {
-		"x": arry[0].x,
-		"y": funct.reduce(arry, function (pv, cv) { return pv + cv.y; }, 0) / arry.length 
-	    }; return hi;
-	}
-
-	function averagePoints (arry, period) { //period is the number of points that are being averaged
-	    return funct.rollingFold(arry, averagePointsArray, period);
-	}
-
-        topic.subscribe("getData", function (start, end) {
-	    var url = "http://metobs.ssec.wisc.edu/app/rig/tower/data/json";
-	    var q = "symbols=";
-	    funct.forEach(dataTypes, function (item) {
-		q = q + item + ":";
-	    });
-	    q = q.slice(0, -1);
-	    q = q + "&begin=" + stringDate(start) + "&end=" + stringDate(end);
-	    console.log(url + "?"+ q);
-            request.get("data/realData.json", {
-	        handleAs: "json",
-	        timeout: 5000
-	    }).then(function (response) {
-                topic.publish("removePlots");
-		topic.publish("removeOptions");
-		//formatting the name
-		response.stamps = funct.map(response.stamps, function (item) {//"2014-05-20 16:07:01"
-		    var parsed = funct.map(item.split(/:| |-/), function (item) {
-			return parseInt(item);
-		    });
-		    return new Date(parsed[0], parsed[1], parsed[2], parsed[3], parsed[4], parsed[5], 0); 
-		});
-		//formatting the data
-		funct.forEach(response.symbols, function (pltName) {
-		    //index is where the name appears so that you can match the name with the data
-		    var index = response.symbols.indexOf(pltName);
-		    //remove underscore, add space, change to proper case. 
-		    pltName = pltName.replace("_", " ").toProperCase();
-		    var plotObject = {
-			title: pltName,
-			series: funct.map(response.data, function (set, ind) { 
-			    //to add supp for multiple series, enclose in brackets and iterate through all of the 
-			    //indexes you want, adding them to the array.
-			    //data is in the form of tuples that match with the names, so we get the tuple at certain index, and then get the time value for that 
-			    return {"x": response.stamps[ind], "y": set[index]};
-			})
-		    };
-		    var maxPoints = 200;
-		    var period = Math.ceil(plotObject.series.length / maxPoints);
-		    if (period > 1) {
-			plotObject.series = averagePoints(plotObject.series, period);
-		    }
-		    topic.publish("addDataSet", plotObject);
-		});
-	    }, function (error) {
-		alert(error);
-		console.log(error);
-	    });
-        });
-
-	//adding a method to change strings to their proper case. 
-	String.prototype.toProperCase = function () {
-	    return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
-	};
-
-        topic.publish("getData", registry.byId("startTime").value, registry.byId("endTime").value);
+	});
     });
