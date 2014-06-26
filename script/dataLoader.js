@@ -3,8 +3,9 @@ require(
      "dojox/lang/functional",
      "dojo/request",
      "dijit/registry",
+     "dojo/date",
      "dojo/domReady!"
-    ], function (topic, funct, request, registry) {
+    ], function (topic, funct, request, registry, date) {
         var dataTypes = {
 	    airTemp : "t",
 	    relativeHumidity: "rh",
@@ -12,19 +13,19 @@ require(
 	    wind_speed: "spd"
 	};
 
-	function stringDate (date) {
+	function stringDate (dt) {
 	    var fin = "";
-	    fin += date.getUTCFullYear();
+	    fin += dt.getUTCFullYear();
 	    fin += "-";
-	    fin += twoDigitString(date.getUTCMonth());
+	    fin += twoDigitString(dt.getUTCMonth());
 	    fin += "-";
-	    fin += twoDigitString(date.getUTCDate());
+	    fin += twoDigitString(dt.getUTCDate());
 	    fin += "+";
-	    fin += twoDigitString(date.getUTCHours());
+	    fin += twoDigitString(dt.getUTCHours());
 	    fin += ":";
-	    fin += twoDigitString(date.getUTCMinutes());
+	    fin += twoDigitString(dt.getUTCMinutes());
 	    fin += ":";
-	    fin += twoDigitString(date.getUTCSeconds());
+	    fin += twoDigitString(dt.getUTCSeconds());
 	    return fin;
 	}
 	function twoDigitString (intr) {
@@ -73,7 +74,7 @@ require(
 	    this.names = names;
 	    this.unit = unit;
 	}
-	var maxPoints = 100;
+	var maxPoints = 200;
         topic.subscribe("getData", function (start, end) {
 	    var url = "http://metobs.ssec.wisc.edu/app/rig/tower/data/json";
 	    var q = "symbols=";
@@ -89,7 +90,8 @@ require(
 	    }).then(function (response) {
                 topic.publish("removePlots");
 		topic.publish("removeOptions");
-		
+		topic.publish("removeLegends");
+
 		//formatting the time data
 		response.stamps = funct.map(response.stamps, function (item) {//"2014-05-20 16:07:01"
 		    var parsed = funct.map(item.split(/:| |-/), function (item) {
@@ -97,25 +99,26 @@ require(
 		    });
 		    return new Date(parsed[0], parsed[1], parsed[2], parsed[3], parsed[4], parsed[5], 0); 
 		    	});
-/*
-		var realStructure = [new Direction (["air_temp", "dewpoint"], "ºC"), 
+
+		var fullStructure = [new Direction (["air_temp", "dewpoint"], "ºC"), 
 				     new Direction (["pressure"], "hPa"), 
 				     new Direction (["wind_speed"], "m/s"),
 				     new Direction (["wind_direction"], "deg"),
-				     new Direction (["solar_flux"], "flux")];
-		funct.map(realStructure, function (plt) {//plt is an object containing strings that represent plot groupings.
-		    var plotHolder = {};
-		    plotHolder.title = "";
-		    funct.forEach(plt, function (pltName) {
-			plotHolder.title += pltName.name.replace("_", " ").toProperCase() + " and ";
-		    });
-		    plotHolder.title = plotHolder.title.slice(0,-5);
-		    plotHolder.plots = funct.map(plt, function (pltdir) {
-			var index = response.symbols.indexOf(pltdir.name);
+				     new Direction (["solar_flux"], "flux"),
+				     new Direction (["relative_humidity"], "%")];
+
+		var structure =  [new Direction (["air_temp", "dewpoint"], "ºC"),
+				  new Direction (["relative_humidity"], "%")];
+
+		funct.map(structure, function (plt) {//plt is an object containing strings that represent plot groupings.
+		    var plotHolder = {title: ""};
+		    plotHolder.plots = funct.map(plt.names, function (pltName) {
+			plotHolder.title += pltName.replace("_", " ").toProperCase() + " and ";
+			var index = response.symbols.indexOf(pltName);
 			//remove underscore, add space, change to proper case. 
-			pltdir.name = pltdir.name.replace("_", " ").toProperCase();
+			pltName = pltName.replace("_", " ").toProperCase();
 			var seriesObject = {
-			    title: pltdir.name,
+			    title: pltName,
 			    series: funct.map(response.data, function (set, ind) { 
 				//data is in the form of tuples that match with the names, so we get the tuple at certain index, and then get the time value for that 
 				return {"x": response.stamps[ind], "y": set[index]};
@@ -127,12 +130,11 @@ require(
 			}
 			return seriesObject;
 		    });
+		    plotHolder.title = plotHolder.title.slice(0,-5);
 		    plotHolder.unit = plt.unit;
 		    topic.publish("addDataSet", plotHolder);
 		});
-*/
-		var structure = [["dewpoint", "relative_humidity", "air_temp"]]; 
-
+/*
 		funct.map(structure, function (plt) {//plt is an array containing strings that represent plot groupings.
 		    var plotHolder = {};
 		    plotHolder.title = "";
@@ -159,7 +161,7 @@ require(
 		    });
 		    topic.publish("addDataSet", plotHolder);
 		});
-
+*/
 	    }, function (error) {
 		alert(error);
 		console.log(error);

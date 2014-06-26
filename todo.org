@@ -20,10 +20,15 @@ TODO: figure out vertical bar
 
 daily goals:
 x1. get averaging to reduce points working
-2. fix x axis
+x2. fix x axis
 x3. fix x scale
 x4. investigate bar mechanisms
    stock has way to do that, and can clone the repo off of github.
 x5. add preset and custom time menu
 x6. refactor
+
+1. interactive legends replacement for toggle buttons?
+2. change the data model to use datastore insetad of an object
+3. Support auto updating
+4. add content to dreadnaught or possibly metobs
 

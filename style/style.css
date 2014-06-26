@@ -1,8 +1,8 @@
 html, body {
   height: 100%;
-  margin: 0;
+  margin: 0px;
   overflow: hidden;
-  padding: 0;
+  padding: 0px;
 }
 
 
@@ -14,24 +14,29 @@ html, body {
   width: 30%;
 }
 #controls {
-  width:200px;
+  width:238px;
 }
 
 #graphHolder {
   padding:0px;
   border:0px;
-  width:75%;
+  width:80%;
   height:100%;
+}
+div {
+  padding:0px;
 }
 
 #downloadButton{
   width:100px;
 }
+
 .claro .demoLayout .edgePanel{
   background-color: #d0e9fc;
   height:17.5%;
   margin:0;
 }
+
 
 #viewsChart {
   width: 550px;

@@ -4,7 +4,6 @@ require (
      "dijit/layout/ContentPane",
      "dijit/form/Button",
      "dijit/form/CheckBox",
-     "dojo/fx/Toggler",
      "dijit/form/TimeTextBox",
      "dojo/topic",
      "dijit/form/DropDownButton",
@@ -13,14 +12,13 @@ require (
      "dojox/lang/functional",
      "dijit/form/ValidationTextBox",
      "dojox/layout/TableContainer",
-     "dojo/store/Observable",
-     "dojo/store/Memory",
      "dojo/date",
      "dijit/form/DateTextBox",
      "dijit/form/Select",
+     "dojo/dom-style",
      "dojo/domReady!"
-    ], function (registry, BorderContainer, ContentPane, Button, CheckBox, Toggler, TimeTextBox, topic, DropDownButton, DropDownMenu, MenuItem,
-	           funct, VTB, TableContainer, date, DateTextBox, Select) {
+    ], function (registry, BorderContainer, ContentPane, Button, CheckBox, TimeTextBox, topic, DropDownButton, DropDownMenu, MenuItem,
+	           funct, VTB, TableContainer, date, DateTextBox, Select, style) {
 
 
 	registry.byClass = function (className) {
@@ -119,15 +117,10 @@ require (
 	    regExp:"^[0-9]+|Y Size$",
 	    style: "width: 100px"
         });
-        var sameSizeAsCurrent  = new Button ({
-	    id: "sameSizeAsCurrent",
-	    label: "Same Size as Current Display"
-        });
-
-        var toggleButton = new Button({
+/*        var toggleButton = new Button({
 	    id: "toggleButton"
-        });
-
+        }); 
+*/
 
         var startTime = new TimeTextBox({
 	    id: "startTime",
@@ -185,8 +178,13 @@ require (
 		{label: "Custom", value: -1}
 	    ]
 	});
+	var autoUpdateContainer = new ContentPane({
+	    id: "autoUpdateContainer",
+	    innerHTML:"<label>Auto Update <label>"
+	});
 	var timeAutoUpdate = new CheckBox ({
-	    id:"timeAutoUpdate"
+	    id:"timeAutoUpdate",
+	    value: "off"
 	});
 
         //=====--building the dom--=======
@@ -214,14 +212,13 @@ require (
             );
         });
 
-        downloadImagePane.addChild(sameSizeAsCurrent);    
         downloadImagePane.addChild(downloadSizeX);
         downloadImagePane.addChild(downloadSizeY);
         downloadImagePane.addChild(downloadImage);
 
-
+	autoUpdateContainer.addChild(timeAutoUpdate);
 	timeControls.addChild(timeOptionsSelect);
-	timeControls.addChild(timeAutoUpdate);
+	timeControls.addChild(autoUpdateContainer);
 
 	customTime.addChild(startDate);
 	customTime.addChild(endDate);
@@ -237,20 +234,13 @@ require (
 	controls.addChild(downloadDataPane);
         controls.addChild(time);
 
-	graphHolder.addChild(toggleButton);
+//	graphHolder.addChild(toggleButton);
         appLayout.addChild(controls);
         appLayout.addChild(graphHolder);
 
         //=====Button Behavior=====
-        var menuToggler = new Toggler({
-	    node: "controls"
-	    
-        });
-	var customTimeToggler = new Toggler({
-	    node: "customTime", id:"customTimeToggler"
-	});
-	registry.add(customTimeToggler);
-	customTimeToggler.hide();
+	style.set("customTime", "display", "none");
+	style.set("timeOptionsSelect", "display", "block");
 	appLayout.startup();
 
     });
