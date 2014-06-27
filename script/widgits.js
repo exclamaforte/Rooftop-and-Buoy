@@ -184,6 +184,7 @@ require (
 	});
 	var timeAutoUpdate = new CheckBox ({
 	    id:"timeAutoUpdate",
+	    cancel: [],
 	    value: "off"
 	});
 
@@ -211,7 +212,6 @@ require (
                 })
             );
         });
-
         downloadImagePane.addChild(downloadSizeX);
         downloadImagePane.addChild(downloadSizeY);
         downloadImagePane.addChild(downloadImage);

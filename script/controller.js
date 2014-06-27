@@ -1,5 +1,5 @@
 require(
-    ["dojo/dom",
+   ["dojo/dom",
      "dojo/on",
      "dojo/topic",
      "dojo/dom-style",
@@ -21,27 +21,17 @@ require(
      "dojox/charting/axis2d/Default",
      "dojox/charting/widget/Legend",
      "dijit/layout/ContentPane",
-     "dojo/fx/Toggler",
      "dojo/domReady!"
     ], function (dom, on, topic, style, query, registry, ToggleButton, date, funct, domConstruct, 
 		 ChartWidgit, theme, Lines, Tooltip, Magnify, request, Indicator, ready, script, Default,
-		 Legend, ContentPane, Toggler) {
+		 Legend, ContentPane) {
 
 	on(registry.byId("timeAutoUpdate"), "change", function (e) {
 	    var button = registry.byId("timeAutoUpdate");
-	    if (button.value === "on") {
-		button.set("value", "off");
+	    if (button.checked === true && style.get("autoUpdateContainer", "display") === "block") { 
+		topic.publish("addAutoDataUpdate");
 	    } else {
-		button.set("value", "on");
-	    }
-	    if (button.value === "on" && style.get("autoUpdateContainer", "display") === "block") { 
-		button.cancel = setInterval(function () {
-		    topic.publish("autoDataUpdate");
-		}, 6000);
-	    } else {
-		if (typeof button.cancel !== 'undefined') {
-		    clearInterval(button.cancel);
-		}
+		topic.publish("cancelAutoDataUpdate");
 	    }
 	});
 
@@ -50,10 +40,14 @@ require(
 	    if (value === -1) {
 		style.set("customTime", "display", "block");
 		style.set("autoUpdateContainer", "display", "none");
+		topic.publish("cancelAutoDataUpdate");
 	    } else {
 		style.set("customTime", "display", "none");
 		style.set("autoUpdateContainer", "display", "block");
-		topic.publish("autoDataUpdate");
+		topic.publish("dataUpdate");
+		if (registry.byId("timeAutoUpdate").checked === true) {
+		    topic.publish("addAutoDataUpdate");
+		}
 	    }
 	});
 
@@ -72,9 +66,22 @@ require(
 	});
 
         on(window, "resize", function (e) {topic.publish("rsize");});
-        //------------event handling -------------- ==========
 
-	topic.subscribe("autoDataUpdate", function() {
+        //------------event handling -------------- ==========
+	topic.subscribe("addAutoDataUpdate", function () {
+	    var button = registry.byId("timeAutoUpdate");
+	    button.cancel = setInterval(function () {
+		topic.publish("dataUpdate");
+	    }, 3000);
+	});
+	topic.subscribe("cancelAutoDataUpdate", function () {
+	    var button = registry.byId("timeAutoUpdate");
+	    if (typeof button.cancel !== 'undefined') {
+		clearInterval(button.cancel);
+	    }
+	    //button.checked = false;
+	});
+	topic.subscribe("dataUpdate", function() {
 	    topic.publish("dateChange", date.add(new Date(), "hour", -1 * registry.byId("timeOptionsSelect").value), new Date());
 	});
 
