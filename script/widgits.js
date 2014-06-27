@@ -33,12 +33,12 @@ require (
 
         //------------------sections------------------------------------------------------------------------------------------
         var controls = new ContentPane({
-	    region: "center",
+	    region: "bottom",
 	    id: "controls"
         });
         
         var graphHolder = new ContentPane({
-	    region: "right",
+	    region: "center",
             id: "graphHolder", "class": "centerPanel",
             splitter: true, style:"height: 100%;"
         });
@@ -93,9 +93,8 @@ require (
 
 	var downloadDataPane = new ContentPane({
 	    title: "size",
-	    id: "downloadDataPane", "class": "downloadPane",
-	    content: downloadData
-        });
+	    id: "downloadDataPane", "class": "downloadPane"
+       });
 
         var downloadImagePane = new ContentPane({
 	    id: "downloadImagePane", 
@@ -117,10 +116,12 @@ require (
 	    regExp:"^[0-9]+|Y Size$",
 	    style: "width: 100px"
         });
-/*        var toggleButton = new Button({
-	    id: "toggleButton"
+        var toggleButton = new Button({
+	    id: "toggleButton",
+	    value: false,
+	    label: "Hide Controls"
         }); 
-*/
+
 
         var startTime = new TimeTextBox({
 	    id: "startTime",
@@ -169,6 +170,9 @@ require (
         });
 	var timeOptionsSelect = new Select({
 	    id: "timeOptionsSelect",
+	    style: {
+		width:"14em"
+	    },
 	    options: [
 		{label: "Past 1 Hours", value: 1},
 		{label: "Past 3 Hours", value: 3},
@@ -212,9 +216,11 @@ require (
                 })
             );
         });
-        downloadImagePane.addChild(downloadSizeX);
-        downloadImagePane.addChild(downloadSizeY);
-        downloadImagePane.addChild(downloadImage);
+        //downloadImagePane.addChild(downloadSizeX);
+        //downloadImagePane.addChild(downloadSizeY);
+        //downloadImagePane.addChild(downloadImage);
+	//downloadDataPane.addChild(downloadData);
+	//controls.addChild(downloadDataPane);
 
 	autoUpdateContainer.addChild(timeAutoUpdate);
 	timeControls.addChild(timeOptionsSelect);
@@ -231,10 +237,10 @@ require (
 
         controls.addChild(display);
         controls.addChild(downloadImagePane);
-	controls.addChild(downloadDataPane);
+
         controls.addChild(time);
 
-//	graphHolder.addChild(toggleButton);
+	graphHolder.addChild(toggleButton);
         appLayout.addChild(controls);
         appLayout.addChild(graphHolder);
 

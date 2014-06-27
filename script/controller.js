@@ -65,8 +65,20 @@ require(
 	    topic.publish("dateChange", st, et);
 	});
 
-        on(window, "resize", function (e) {topic.publish("rsize");});
+	on(registry.byId("toggleButton"), "click", function (e) {
+	    var toggle = registry.byId("toggleButton");
+	    if(toggle.value) {
+		style.set("controls", "display", "block");
+		toggle.set("label", "Hide Controls");
+		toggle.set("value", false);
+	    } else {
+		style.set("controls", "display", "none");
+		toggle.set("label", "Show Controls");
+		toggle.set("value", true);
+	    }
+	});
 
+        on(window, "resize", function (e) {topic.publish("rsize");});
         //------------event handling -------------- ==========
 	topic.subscribe("addAutoDataUpdate", function () {
 	    var button = registry.byId("timeAutoUpdate");
@@ -113,12 +125,12 @@ require(
 		id: plotHolder.title + "Legend",
 		"class":"legend"
 	    });
-	    registry.byId(plotHolder.title + "Container").addChild(legend);
+	    domConstruct.place(legend.domNode, plotHolder.title, "before");
 	});
         topic.subscribe("rsize", function (e) {
 	    var graphs = query(".graph");
-	    var percentage = .92 *(style.get("graphHolder", "height") - 1) / (graphs.length);
-	    var width = style.get("graphHolder", "width") * .98;
+	    var percentage = .90 *(style.get("graphHolder", "height") - 35) / (graphs.length);
+	    var width = style.get("graphHolder", "width") * .97;
 	    var charts = registry.byClass("graph");
 	    charts.forEach(function (item) {
 		item.chart.resize({h:percentage, w:width});//add support to resize the stuff.
@@ -232,7 +244,6 @@ require(
 	    holder.chart.render();
 	    if (dom.byId(plotHolder.title + "Toggle") === null) {
 		topic.publish("addOption", plotHolder);
-
 	    }
 	    if (dom.byId(plotHolder.title + "Legend") === null) {
 		topic.publish("addLegend", plotHolder);
