@@ -16,9 +16,10 @@ require (
      "dijit/form/DateTextBox",
      "dijit/form/Select",
      "dojo/dom-style",
+     "dojo/dom-construct",
      "dojo/domReady!"
     ], function (registry, BorderContainer, ContentPane, Button, CheckBox, TimeTextBox, topic, DropDownButton, DropDownMenu, MenuItem,
-	           funct, VTB, TableContainer, date, DateTextBox, Select, style) {
+	           funct, VTB, TableContainer, date, DateTextBox, Select, style, domConstruct) {
 
 
 	registry.byClass = function (className) {
@@ -28,22 +29,26 @@ require (
 	};
         //create the BorderContainer and attach it to our appLayout div
         var appLayout = new BorderContainer({
-	    design: "headline"
+	    design: "headline", 
+	    splitter: false
         }, "appLayout");
 
         //------------------sections------------------------------------------------------------------------------------------
         var controls = new ContentPane({
-	    region: "bottom",
+	    region: "left", splitter: false,
 	    id: "controls"
         });
         
         var graphHolder = new ContentPane({
 	    region: "center",
             id: "graphHolder", "class": "centerPanel",
-            splitter: true, style:"height: 100%;"
+            splitter: false, style:"height: 100%;"
         });
         
         //----------------tabs-----------------------------------------------------------------------------------------------
+	var key = new ContentPane({
+	    id: "key", region: "right"
+        }); 
         var display = new ContentPane({
             title: "Display", id: "display", 
 	    "class": "controlDiv"
@@ -51,7 +56,8 @@ require (
 
         var time = new ContentPane({
             title: "Time", id: "time",
-	    "class": "controlDiv"
+	    "class": "controlDiv",
+	    region: "center"
         });
         var timeControls = new ContentPane({
 	    id: "timeControls"
@@ -60,20 +66,12 @@ require (
 	    id: "customTime"
 	});
         //----------------content-----------------------------------------------------------------------------------------------
-
-        /*    var optionsGrid = new DataGrid({
-	 query: { id: "optionsGrid"},
-	 structure: [
-	 {name: "Title", field: "title", width: "60px"},
-	 {name: "On/Off", field: "on/off", width: "60px"}
-	 ]
-         });
-         */
+/*
         var optionsGrid = new TableContainer({
 	    id: "optionsGrid",
 	    cols: 2
         });
-
+*/
         var dataMenu = new DropDownMenu({style: "display: none;"});
         var imageMenu = new DropDownMenu({style: "display: none;"});
 
@@ -194,7 +192,7 @@ require (
 
         //=====--building the dom--=======
 
-	display.addChild(optionsGrid);
+	//display.addChild(optionsGrid);
         
 
         //constructing the filetype download menu
@@ -223,8 +221,8 @@ require (
 	//controls.addChild(downloadDataPane);
 
 	autoUpdateContainer.addChild(timeAutoUpdate);
-	timeControls.addChild(timeOptionsSelect);
-	timeControls.addChild(autoUpdateContainer);
+	//timeControls.addChild(timeOptionsSelect);
+	//timeControls.addChild(autoUpdateContainer);
 
 	customTime.addChild(startDate);
 	customTime.addChild(endDate);
@@ -232,13 +230,16 @@ require (
         customTime.addChild(endTime);
         customTime.addChild(timeUpdateButton);
 
-	time.addChild(timeControls);
+	time.addChild(timeOptionsSelect);
+	time.addChild(autoUpdateContainer);
 	time.addChild(customTime);
 
-        controls.addChild(display);
-        controls.addChild(downloadImagePane);
+        //controls.addChild(display);
+        //controls.addChild(downloadImagePane);
 
         controls.addChild(time);
+	controls.addChild(key);
+	domConstruct.place(toggleButton.domNode, graphHolder.domNode, "before");
 
 	graphHolder.addChild(toggleButton);
         appLayout.addChild(controls);
@@ -246,7 +247,7 @@ require (
 
         //=====Button Behavior=====
 	style.set("customTime", "display", "none");
-	style.set("timeOptionsSelect", "display", "block");
+
 	appLayout.startup();
 
     });

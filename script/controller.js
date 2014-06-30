@@ -19,12 +19,13 @@ require(
      "dojo/ready",
      "dojo/request/script",
      "dojox/charting/axis2d/Default",
-     "dojox/charting/widget/Legend",
+     "dojox/charting/widget/SelectableLegend",
      "dijit/layout/ContentPane",
+     "dojox/charting/plot2d/Areas",
      "dojo/domReady!"
     ], function (dom, on, topic, style, query, registry, ToggleButton, date, funct, domConstruct, 
 		 ChartWidgit, theme, Lines, Tooltip, Magnify, request, Indicator, ready, script, Default,
-		 Legend, ContentPane) {
+		 SelectableLegend, ContentPane, Areas) {
 
 	on(registry.byId("timeAutoUpdate"), "change", function (e) {
 	    var button = registry.byId("timeAutoUpdate");
@@ -76,6 +77,7 @@ require(
 		toggle.set("label", "Show Controls");
 		toggle.set("value", true);
 	    }
+	    topic.publish("rsize");
 	});
 
         on(window, "resize", function (e) {topic.publish("rsize");});
@@ -97,7 +99,7 @@ require(
 	    topic.publish("dateChange", date.add(new Date(), "hour", -1 * registry.byId("timeOptionsSelect").value), new Date());
 	});
 
-        topic.subscribe("addOption", function (plotHolder) {
+/*        topic.subscribe("addOption", function (plotHolder) {
 	    registry.byId("optionsGrid").addChild(
 	        new ToggleButton({
 		    showLabel: true,
@@ -118,20 +120,23 @@ require(
 	        })
 	    );
         });
+*/
 	topic.subscribe("addLegend", function (plotHolder) {
 	    var chartWidget  = registry.byId(plotHolder.title);
-	    var legend = new Legend({
+	    var legend = new SelectableLegend({
 		chart: chartWidget.chart,
 		id: plotHolder.title + "Legend",
 		"class":"legend"
 	    });
-	    domConstruct.place(legend.domNode, plotHolder.title, "before");
+	    registry.byId("key").addChild(legend);
 	});
         topic.subscribe("rsize", function (e) {
-	    var graphs = query(".graph");
-	    var percentage = .90 *(style.get("graphHolder", "height") - 35) / (graphs.length);
-	    var width = style.get("graphHolder", "width") * .97;
+	    console.log("rsize");
 	    var charts = registry.byClass("graph");
+	    registry.byId("graphHolder").resize();
+	    var graphs = query(".graph");
+	    var percentage = .97 *(style.get("graphHolder", "height") - 35) / (graphs.length);
+	    var width = style.get("graphHolder", "width") * .97;
 	    charts.forEach(function (item) {
 		item.chart.resize({h:percentage, w:width});//add support to resize the stuff.
 	    });
@@ -199,7 +204,22 @@ require(
 	    var dee = new Date(parseInt(d));
 	    return dee.toTimeString().split(" ")[0];
 	}
+	
+	function getColorFromRotation () {
+	    var index = 0;
+	    var colorRotation = ["aqua", "aquamarine", "blue", "blueviolet", "chartreuse", "crimson", "darkgoldenrod", "darkgreen", "darkorange", "olive", "springgreen"];
+	    return function () {
+		index = (index + 1) % colorRotation.length;
+		return colorRotation[index];
+	    };
+	};
+	var dispFunct = function (name) { 
+	    return function (firstDataPoint, secondDataPoint, fixed, precision) {
+		return name + " = (" + formatDate(firstDataPoint.x.getTime().toString()) + "  ,   " + firstDataPoint.y.toFixed(2) + ")";
+	    };
+	};
 
+	var getColor = getColorFromRotation();
         topic.subscribe("addDataSet", function (plotHolder) {
 	    var container = new ContentPane({
 		id: plotHolder.title + "Container",
@@ -212,29 +232,27 @@ require(
 	        theme: theme
 	    });
 	    container.addChild(holder);
-	    registry.byId("graphHolder").addChild(container);
+	    domConstruct.place(container.domNode, "graphHolder", "first");
 	    
 	    holder.chart //enable cash, add labelSizeChange (if drop labels is not working) if add zoom feature.
 	        .addPlot("default", {type: Lines, markers:false, lines: true})
-	        .addAxis("x", {fixLower: "major", fixUpper: "minor", labelFunc: formatDate, title:"Time", titleOrientation:"away", titleGap: 5})
+		.addPlot("hue", {type: Lines, vAxis: "other y"})
+	        .addAxis("x", {fixLower: "major", fixUpper: "minor", labelFunc: formatDate, titleOrientation:"away", titleGap: 5})
 	        .addAxis("y", {vertical: true, fixLower: "minor", fixUpper: "major", title: plotHolder.unit, titleOrientation:"away", titleGap: 8}) 
-		.addAxis("test", {vertical: true, leftBottom:false})
+		.addAxis("other y", {vertical: true, leftBottom:false})
 	        .setTheme(theme);
 	    //holder.chart.title = plotHolder.title;
 	    holder.chart.titleGap = 10;
 	    holder.chart.titleFont = "15pt";
 
-	    var dispFunct = function (name) { 
-		return function (firstDataPoint, secondDataPoint, fixed, precision) {
-		    return name + " = (" + formatDate(firstDataPoint.x.getTime().toString()) + "  ,   " + firstDataPoint.y.toFixed(2) + ")";
-		};
-	    };
+
 	    var prec = 0.1;
 	    var yOffset = 20;
 
 	    funct.forEach(plotHolder.plots, function (seriesObject, index) {
 		//add series to chart
-		holder.chart.addSeries(seriesObject.title, seriesObject.series);
+		holder.chart.addSeries(seriesObject.title, seriesObject.series,{plot:"default", color: getColor()});//change plot when adding support for multiple axis need serie
+		
 		//add vertical indicator to chart
 		var interactor = new Indicator(holder.chart, "default", { //have to remember to change series
 		    dualIndicator: true, series: seriesObject.title, precision: prec, labelFunc: dispFunct(seriesObject.title), 

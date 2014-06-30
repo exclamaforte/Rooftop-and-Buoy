@@ -84,7 +84,7 @@ require(
 	    q = q.slice(0, -1);
 	    q = q + "&begin=" + stringDate(start) + "&end=" + stringDate(end);
 	    console.log(url + "?"+ q);
-            request.get("data/realData.json", {
+            request.get("data/twentyfourhours.json", {
 	        handleAs: "json",
 	        timeout: 5000
 	    }).then(function (response) {
@@ -100,17 +100,16 @@ require(
 		    return new Date(parsed[0], parsed[1], parsed[2], parsed[3], parsed[4], parsed[5], 0); 
 		    	});
 
-		var fullStructure = [new Direction (["air_temp", "dewpoint"], "ºC"), 
+		var fullStructure = [new Direction (["accumulated_precipitation"], "in"),
+				     new Direction (["altimeter"], "inHg"),
 				     new Direction (["pressure"], "hPa"), 
 				     new Direction (["wind_speed"], "m/s"),
 				     new Direction (["wind_direction"], "deg"),
 				     new Direction (["solar_flux"], "flux"),
-				     new Direction (["relative_humidity"], "%")];
+				     new Direction (["relative_humidity"], "%"),
+				     new Direction (["air_temp", "dewpoint"], "ºC")];
 
-		var structure =  [new Direction (["air_temp", "dewpoint"], "ºC"),
-				  new Direction (["relative_humidity"], "%")];
-
-		funct.map(structure, function (plt) {//plt is an object containing strings that represent plot groupings.
+		funct.map(fullStructure, function (plt) {//plt is an object containing strings that represent plot groupings.
 		    var plotHolder = {title: ""};
 		    plotHolder.plots = funct.map(plt.names, function (pltName) {
 			plotHolder.title += pltName.replace("_", " ").toProperCase() + " and ";

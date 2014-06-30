@@ -27,8 +27,12 @@ x4. investigate bar mechanisms
 x5. add preset and custom time menu
 x6. refactor
 
-1. interactive legends replacement for toggle buttons?
+1. interactive legends replacement for toggle buttons? Toggle buttons allow user to focus on plot. Could just do the legends as the toggle buttons.
+   a. We could just move the labels to plot axis and save a lot of space. Or add them as titles.
 2. change the data model to use datastore insetad of an object
-3. Support auto updatingb
-4. add content to dreadnaught or possibly metobs
+3. ask about adding stuff to metobs.
+x4. make plots all different colors.
+5. Align x axis.
+
+
 

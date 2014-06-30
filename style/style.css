@@ -1,30 +1,50 @@
 html, body {
   height: 100%;
   margin: 0px;
-  overflow: hidden;
+/*  overflow: hidden;*/
   padding: 0px;
 }
 
-
+#key {
+  width:250px;
+  background-color:#efefef;
+}
+#autoUpdateContainer {
+  width: 200px;
+}
 #appLayout {
   height: 100%;
   width: 100%;
+  background-color:#efefef;
 }
 #leftCol {
   width: 30%;
 }
 #controls {
-  width:238px;
+  padding:0px;
+  border:0px;
 }
-
+#timeControls {
+  width:250px;
+}
+#customTime {
+  width: 600px;
+}
+#time {
+  background-color:#efefef;
+  width: 250px
+}
 #graphHolder {
   padding:0px;
   border:0px;
   width:80%;
   height:100%;
+  background-color:#efefef;
 }
 div {
   padding:0px;
+  margin:0px;
+  
 }
 
 #downloadButton{
@@ -49,6 +69,7 @@ div {
   border-width:0px;
   outline:0;
   margin:0;
+/*  overflow: hidden;*/
 }
 
 svg {
