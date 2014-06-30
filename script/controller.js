@@ -1,5 +1,5 @@
 require(
-   ["dojo/dom",
+    ["dojo/dom",
      "dojo/on",
      "dojo/topic",
      "dojo/dom-style",
@@ -22,10 +22,11 @@ require(
      "dojox/charting/widget/SelectableLegend",
      "dijit/layout/ContentPane",
      "dojox/charting/plot2d/Areas",
+     "dojox/charting/plot2d/MarkersOnly",
      "dojo/domReady!"
     ], function (dom, on, topic, style, query, registry, ToggleButton, date, funct, domConstruct, 
 		 ChartWidgit, theme, Lines, Tooltip, Magnify, request, Indicator, ready, script, Default,
-		 SelectableLegend, ContentPane, Areas) {
+		 SelectableLegend, ContentPane, Areas, MarkersOnly) {
 
 	on(registry.byId("timeAutoUpdate"), "change", function (e) {
 	    var button = registry.byId("timeAutoUpdate");
@@ -86,7 +87,7 @@ require(
 	    var button = registry.byId("timeAutoUpdate");
 	    button.cancel = setInterval(function () {
 		topic.publish("dataUpdate");
-	    }, 3000);
+	    }, 60000);
 	});
 	topic.subscribe("cancelAutoDataUpdate", function () {
 	    var button = registry.byId("timeAutoUpdate");
@@ -99,28 +100,28 @@ require(
 	    topic.publish("dateChange", date.add(new Date(), "hour", -1 * registry.byId("timeOptionsSelect").value), new Date());
 	});
 
-/*        topic.subscribe("addOption", function (plotHolder) {
-	    registry.byId("optionsGrid").addChild(
-	        new ToggleButton({
-		    showLabel: true,
-		    checked: true,
-		    label: plotHolder.title + " - On",
-		    id: plotHolder.title + "Toggle",
-		    "class": "option",
-		    onChange: function (val) { 
-		        if (val) {
-			    this.set("label", plotHolder.title + " - On");
-			    topic.publish("addDataSet", plotHolder);
-		        }
-		        else {
-			    this.set("label", plotHolder.title + " - Off");
-			    topic.publish("removePlot", plotHolder);
-		        }
-		    }
-	        })
-	    );
-        });
-*/
+	/*        topic.subscribe("addOption", function (plotHolder) {
+	 registry.byId("optionsGrid").addChild(
+	 new ToggleButton({
+	 showLabel: true,
+	 checked: true,
+	 label: plotHolder.title + " - On",
+	 id: plotHolder.title + "Toggle",
+	 "class": "option",
+	 onChange: function (val) { 
+	 if (val) {
+	 this.set("label", plotHolder.title + " - On");
+	 topic.publish("addDataSet", plotHolder);
+	 }
+	 else {
+	 this.set("label", plotHolder.title + " - Off");
+	 topic.publish("removePlot", plotHolder);
+	 }
+	 }
+	 })
+	 );
+         });
+	 */
 	topic.subscribe("addLegend", function (plotHolder) {
 	    var chartWidget  = registry.byId(plotHolder.title);
 	    var legend = new SelectableLegend({
@@ -207,10 +208,12 @@ require(
 	
 	function getColorFromRotation () {
 	    var index = 0;
-	    var colorRotation = ["aqua", "aquamarine", "blue", "blueviolet", "chartreuse", "crimson", "darkgoldenrod", "darkgreen", "darkorange", "olive", "springgreen"];
+	    var colorRotation = ["blue", "blueviolet", "darkseagreen", "crimson", "darkgoldenrod", "darkgreen", "darkorange", "olive", "springgreen"];
 	    return function () {
-		index = (index + 1) % colorRotation.length;
-		return colorRotation[index];
+		var cr = colorRotation[index];
+		index = index % colorRotation.length;
+		index = index + 1;
+		return cr;
 	    };
 	};
 	var dispFunct = function (name) { 
@@ -220,6 +223,7 @@ require(
 	};
 
 	var getColor = getColorFromRotation();
+	var colorHolder = {};
         topic.subscribe("addDataSet", function (plotHolder) {
 	    var container = new ContentPane({
 		id: plotHolder.title + "Container",
@@ -233,10 +237,13 @@ require(
 	    });
 	    container.addChild(holder);
 	    domConstruct.place(container.domNode, "graphHolder", "first");
-	    
+	    var chartType = Lines;
+	    if (plotHolder.title === "Wind Direction") {
+		chartType = MarkersOnly;
+	    }
 	    holder.chart //enable cash, add labelSizeChange (if drop labels is not working) if add zoom feature.
-	        .addPlot("default", {type: Lines, markers:false, lines: true})
-		.addPlot("hue", {type: Lines, vAxis: "other y"})
+	        .addPlot("default", {type: chartType, markers:false, lines: true, stroke: {width: 2}})
+		.addPlot("other", {type: chartType, hAxis: "x", vAxis: "other y",lines:true})
 	        .addAxis("x", {fixLower: "major", fixUpper: "minor", labelFunc: formatDate, titleOrientation:"away", titleGap: 5})
 	        .addAxis("y", {vertical: true, fixLower: "minor", fixUpper: "major", title: plotHolder.unit, titleOrientation:"away", titleGap: 8}) 
 		.addAxis("other y", {vertical: true, leftBottom:false})
@@ -250,13 +257,25 @@ require(
 	    var yOffset = 20;
 
 	    funct.forEach(plotHolder.plots, function (seriesObject, index) {
-		//add series to chart
-		holder.chart.addSeries(seriesObject.title, seriesObject.series,{plot:"default", color: getColor()});//change plot when adding support for multiple axis need serie
+
+		var clr = colorHolder[seriesObject.title];
+		if (typeof clr === "undefined") {
+		    clr = getColor();
+		    colorHolder[seriesObject.title] = clr;
+		}
+		/* 
+		 var clr = "black";
+		 if(index !== 0) {
+		 clr = "red";
+		 }
+		 */
+		holder.chart.addSeries(seriesObject.title, seriesObject.series, {plot:"default", color: clr, width: 1});
 		
 		//add vertical indicator to chart
 		var interactor = new Indicator(holder.chart, "default", { //have to remember to change series
-		    dualIndicator: true, series: seriesObject.title, precision: prec, labelFunc: dispFunct(seriesObject.title), 
-		    offset: {x: 0, y: index * yOffset}
+		    dualIndicator: true, series: seriesObject.title, precision: prec, labelFunc: dispFunct(seriesObject.title), offset: {x: 0, y: yOffset * index}, 
+		    mouseOver: true
+
 		});
 	    });
 	    holder.chart.render();
@@ -267,6 +286,6 @@ require(
 		topic.publish("addLegend", plotHolder);
 	    }
 	    topic.publish("rsize");
-
+	    
 	});
     });
