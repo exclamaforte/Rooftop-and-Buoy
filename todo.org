@@ -36,3 +36,6 @@ x4. make plots all different colors.
 
 
 
+performance:
+1. initialize the charts to the correct size.
+2.

@@ -23,16 +23,10 @@ require(
      "dijit/layout/ContentPane",
      "dojox/charting/plot2d/Areas",
      "dojox/charting/plot2d/MarkersOnly",
-     "dojox/charting/widget/Chart2D",
-     "dojox/charting/action2d/_IndicatorElement",
-     "dojo/sniff",
-     "dojo/_base/connect",
-     "dojo/_base/window",
      "dojo/domReady!"
     ], function (dom, on, topic, style, query, registry, ToggleButton, date, funct, domConstruct, 
 		 ChartWidgit, theme, Lines, Tooltip, Magnify, request, Indicator, ready, script, Default,
-		 SelectableLegend, ContentPane, Areas, MarkersOnly, Chart, ChartWidgit2D, IndicatorElement,
-		 has, hub, win) {
+		 SelectableLegend, ContentPane, Areas, MarkersOnly) {
 
 	on(registry.byId("timeAutoUpdate"), "change", function (e) {
 	    var button = registry.byId("timeAutoUpdate");
@@ -93,21 +87,19 @@ require(
 	var newCounter = function () {
 	    var count = 0;
 	    return function () {
-		count+=1;
+		count +=1;
 		return count - 1;
 	    };
 	};
-
-	topic.subscribe("addLoading", function (name) {
-	    registry.byId("graphHolder").addChild(new ContentPane({
-		id: name + "Loading",
-		"class": "loading",
-		innerHTML: "Loading " + name
+	var counter = newCounter;
+	topic.subscribe("addLoading", function () {
+	    registry.byId("graphHolder").addChild(new ContentPane( {
+		id: "loading",
+		innerHTML: "Loading"
 	    }));
 	});
-
-	topic.subscribe("removeLoading", function (name) {
-	    registry.byId(name + "Loading").destroy();
+	topic.subscribe("removeLoading", function () {
+	    registry.byId("laoding").destroy();
 	});
 
 	topic.subscribe("addAutoDataUpdate", function () {
@@ -202,7 +194,7 @@ require(
         });
 
         topic.subscribe("removePlot", function (plotHolder) {
-	    var plot = registry.byId(plotHolder.title);
+	    var plot = registry.byId(plotHolder.title + "Container");
 	    if (!(typeof plot === "undefined" )){
 	        plot.destroy();
 	    }
@@ -222,6 +214,7 @@ require(
                 domConstruct.destroy(item);
                 registry.remove(item.id);
                 registry.remove(item.id + "_splitter");
+		registry.remove(item.id + "Container");
                 //have to remove the splitter crated by the border container
             });
         });
@@ -251,37 +244,37 @@ require(
 	var getColor = getColorFromRotation();
 	var colorHolder = {};
         topic.subscribe("addDataSet", function (plotHolder) {
+	    var container = new ContentPane({
+		id: plotHolder.title + "Container",
+		style: "padding: 0px"
+	    });
 	    var holder = new ChartWidgit({
 	        title: plotHolder.title,
 		margins: 0,
-	        id: plotHolder.title, 
-		"class": "graph"
+	        id: plotHolder.title, "class": "graph",
+	        theme: theme
 	    });
-	    holder.chart.plotArea = {
-		height: plotHolder.height, 
-		width: plotHolder.width
-	    };
-	    style.set(holder, "width", plotHolder.width.toString() + "px");
-	    style.set(holder, "height", plotHolder.height.toString() + "px");
-	    domConstruct.place(holder.domNode, "graphHolder", "first");
+	    container.addChild(holder);
+	    domConstruct.place(container.domNode, "graphHolder", "first");
 	    var chartType = Lines;
 	    if (plotHolder.title === "Wind Direction") {
 		chartType = MarkersOnly;
 	    }
-	    //enable cash, add labelSizeChange (if drop labels is not working) if add zoom feature.
-	    holder.chart
-		.addPlot("default", {type: chartType, markers:false, lines: true, stroke: {width: 2}, height: plotHolder.height, width: plotHolder.width})
+	    holder.chart //enable cash, add labelSizeChange (if drop labels is not working) if add zoom feature.
+	        .addPlot("default", {type: chartType, markers:false, lines: true, stroke: {width: 2}})
 		.addPlot("other", {type: chartType, hAxis: "x", vAxis: "other y",lines:true})
 	        .addAxis("x", {fixLower: "major", fixUpper: "minor", labelFunc: formatDate, titleOrientation:"away", titleGap: 5})
 	        .addAxis("y", {vertical: true, fixLower: "minor", fixUpper: "major", title: plotHolder.unit, titleOrientation:"away", titleGap: 8}) 
 		.addAxis("other y", {vertical: true, leftBottom:false})
 	        .setTheme(theme);
-
-	    holder.chart.title = plotHolder.title;
+	    //holder.chart.title = plotHolder.title;
 	    holder.chart.titleGap = 10;
 	    holder.chart.titleFont = "15pt";
 
+
+	    var prec = 0.1;
 	    var yOffset = 20;
+
 	    funct.forEach(plotHolder.plots, function (seriesObject, index) {
 
 		var clr = colorHolder[seriesObject.title];
@@ -299,48 +292,10 @@ require(
 		
 		//add vertical indicator to chart
 		var interactor = new Indicator(holder.chart, "default", { //have to remember to change series
-		    dualIndicator: true, 
-		    series: seriesObject.title, 
-		    labelFunc: dispFunct(seriesObject.title), 
-		    offset: {x: 0, y: yOffset * index}, 
-		    "class": "interactor",
+		    dualIndicator: true, series: seriesObject.title, precision: prec, labelFunc: dispFunct(seriesObject.title), offset: {x: 0, y: yOffset * index}, 
 		    mouseOver: true
+
 		});
-		interactor.onMouseDown = function () {
-		    funct.forEach(registry.byClass("interactor"), function (item) {
-			item._isMouseDown = true;
-			if(has("ie")){
-			    item._handles.push(hub.connect(item.chart.node, "onmousemove", item, "onMouseMove"));
-			    item._handles.push(hub.connect(item.chart.node, "onmouseup", item, "onMouseUp"));
-			    item.chart.node.setCapture();
-			}else{
-			    item._handles.push(hub.connect(win.doc, "onmousemove", item, "onMouseMove"));
-			    item._handles.push(hub.connect(win.doc, "onmouseup", item, "onMouseUp"));
-			}	
-		    });
-		};
-		
-		interactor.onMouseMove = function (event) {
-		    funct.forEach(registry.byClass("interactor"), function (item) {
-			if(item._isMouseDown || item.opt.mouseOver) {
-			    item._onMouseSingle(event);
-			    
-			}
-		    });
-		};
-				
-		interactor.onMouseUp = function(event){
-		    funct.forEach(registry.byClass("interactor"), function (item) {
-			var plot = item.chart.getPlot(item._uName);
-			plot.stopTrack();
-			item._isMouseDown = false;
-			item._disconnectHandles();
-			plot.pageCoord = null;
-			plot.dirty = true;
-			item.chart.render();
-		    });
-		};
-		topic.publish("removeLoading", seriesObject.title);
 	    });
 	    holder.chart.render();
 	    if (dom.byId(plotHolder.title + "Toggle") === null) {
@@ -349,5 +304,7 @@ require(
 	    if (dom.byId(plotHolder.title + "Legend") === null) {
 		topic.publish("addLegend", plotHolder);
 	    }
+	    topic.publish("rsize");
+	    
 	});
     });

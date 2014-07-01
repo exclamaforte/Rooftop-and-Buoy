@@ -4,20 +4,26 @@ require(
      "dojo/request",
      "dijit/registry",
      "dojo/date",
+     "dojo/dom-style",
      "dojo/domReady!"
-    ], function (topic, funct, request, registry, date) {
+    ], function (topic, funct, request, registry, date, style) {
         var dataTypes = {
 	    airTemp : "t",
 	    relativeHumidity: "rh",
 	    dewPoint: "td",
-	    wind_speed: "spd"
+	    wind_speed: "spd",
+	    wind_direction: "dir",
+	    accumulated_precipitation: "accum_precip",
+	    pressure: "p",
+	    altimeter: "altm",
+	    solar_flux: "flux"
 	};
 
 	function stringDate (dt) {
 	    var fin = "";
 	    fin += dt.getUTCFullYear();
 	    fin += "-";
-	    fin += twoDigitString(dt.getUTCMonth());
+	    fin += twoDigitString(parseInt(dt.getUTCMonth()) + 1);
 	    fin += "-";
 	    fin += twoDigitString(dt.getUTCDate());
 	    fin += "+";
@@ -85,20 +91,20 @@ require(
 	    q = q.slice(0, -1);
 	    q = q + "&begin=" + stringDate(start) + "&end=" + stringDate(end);
 	    console.log(url + "?"+ q);
-            request.get("data/onehour.json", {
+            request.get(url + "?" + q, {
 	        handleAs: "json",
-	        timeout: 5000
+	        timeout: 10000
 	    }).then(function (response) {
                 topic.publish("removePlots");
 		topic.publish("removeOptions");
 		topic.publish("removeLegends");
-
+		
 		//formatting the time data
 		response.stamps = funct.map(response.stamps, function (item) {//"2014-05-20 16:07:01"
 		    var parsed = funct.map(item.split(/:| |-/), function (item) {
 			return parseInt(item);
 		    });
-		    return new Date(parsed[0], parsed[1], parsed[2], parsed[3], parsed[4], parsed[5], 0); 
+		    return new Date(parsed[0], parsed[1] - 1, parsed[2], parsed[3], parsed[4], parsed[5], 0); 
 		});
 
 		var fullStructure = [new Direction (["accumulated_precipitation"], "in", function (item) {return item * 25.4;}),
@@ -120,6 +126,7 @@ require(
 				     new Direction (["solar_flux"], "flux"),
 				     new Direction (["relative_humidity"], "%"),
 				     new Direction (["air_temp", "dewpoint"], "ºC", function (item) {return item * 9 / 5 + 32;})];
+
 		funct.map(fullStructure, function (plt) {//plt is an object containing strings that represent plot groupings.
 		    var plotHolder = {title: ""};
 		    plotHolder.plots = funct.map(plt.names, function (pltName) {
@@ -127,6 +134,7 @@ require(
 			var index = response.symbols.indexOf(pltName);
 			//remove underscore, add space, change to proper case. 
 			pltName = pltName.replace("_", " ").toProperCase();
+			topic.publish("addLoading", pltName);
 			var seriesObject = {
 			    title: pltName,
 			    series: funct.map(response.data, function (set, ind) { 
@@ -146,10 +154,14 @@ require(
 			}
 			return seriesObject;
 		    });
+
+		    plotHolder.height = .97 *(style.get("graphHolder", "height") - 35) / response.symbols.length;
+		    plotHolder.width = style.get("graphHolder", "width") * .97;
 		    plotHolder.title = plotHolder.title.slice(0,-5);
 		    plotHolder.unit = plt.unit;
 		    topic.publish("addDataSet", plotHolder);
 		});
+		topic.publish("rsize");
 	    }, function (error) {
 		alert(error);
 		console.log(error);
