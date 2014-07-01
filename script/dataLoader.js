@@ -85,7 +85,7 @@ require(
 	    q = q.slice(0, -1);
 	    q = q + "&begin=" + stringDate(start) + "&end=" + stringDate(end);
 	    console.log(url + "?"+ q);
-            request.get("data/twentyfourhours.json", {
+            request.get("data/onehour.json", {
 	        handleAs: "json",
 	        timeout: 5000
 	    }).then(function (response) {
@@ -150,34 +150,6 @@ require(
 		    plotHolder.unit = plt.unit;
 		    topic.publish("addDataSet", plotHolder);
 		});
-		/*
-		 funct.map(structure, function (plt) {//plt is an array containing strings that represent plot groupings.
-		 var plotHolder = {};
-		 plotHolder.title = "";
-		 funct.forEach(plt, function (pltName) {
-		 plotHolder.title += pltName.replace("_", " ").toProperCase() + " and ";
-		 });
-		 plotHolder.title = plotHolder.title.slice(0,-5);
-		 plotHolder.plots = funct.map(plt, function (pltName) {
-		 var index = response.symbols.indexOf(pltName);
-		 //remove underscore, add space, change to proper case. 
-		 pltName = pltName.replace("_", " ").toProperCase();
-		 var seriesObject = {
-		 title: pltName,
-		 series: funct.map(response.data, function (set, ind) { 
-		 //data is in the form of tuples that match with the names, so we get the tuple at certain index, and then get the time value for that 
-		 return {"x": response.stamps[ind], "y": set[index]};
-		 })
-		 };
-		 var period = Math.ceil(seriesObject.series.length / maxPoints);
-		 if (period > 1) {
-		 seriesObject.series = averagePoints(seriesObject.series, period);
-		 }
-		 return seriesObject;
-		 });
-		 topic.publish("addDataSet", plotHolder);
-		 });
-		 */
 	    }, function (error) {
 		alert(error);
 		console.log(error);
