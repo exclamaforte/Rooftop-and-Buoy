@@ -76,10 +76,11 @@ require(
 	    return funct.rollingFold(arry, averagePointsArray, period);
 	}
 
-	function Direction(names, unit, conversionFunction) {
+	function Direction(names, unit, conversionFunction, otherLabel) {
 	    this.names = names;
 	    this.unit = unit;
 	    this.conversionFunction = conversionFunction;
+	    this.otherLabel = otherLabel;
 	}
 	var maxPoints = 200;
         topic.subscribe("getData", function (start, end) {
@@ -90,7 +91,6 @@ require(
 	    });
 	    q = q.slice(0, -1);
 	    q = q + "&begin=" + stringDate(start) + "&end=" + stringDate(end);
-	    console.log(url + "?"+ q);
             request.get(url + "?" + q, {
 	        handleAs: "json",
 	        timeout: 10000
@@ -125,9 +125,9 @@ require(
 				     }),
 				     new Direction (["solar_flux"], "flux"),
 				     new Direction (["relative_humidity"], "%"),
-				     new Direction (["air_temp", "dewpoint"], "ºC", function (item) {return item * 9 / 5 + 32;})];
+				     new Direction (["air_temp", "dewpoint"], "ºC", function (item) {return item * 9 / 5 + 32;}, "ºF")];
 
-		funct.map(fullStructure, function (plt) {//plt is an object containing strings that represent plot groupings.
+		funct.map(fullStructure, function (plt) {
 		    var plotHolder = {title: ""};
 		    plotHolder.plots = funct.map(plt.names, function (pltName) {
 			plotHolder.title += pltName.replace("_", " ").toProperCase() + " and ";
@@ -152,13 +152,20 @@ require(
 				seriesObject.series = averagePoints(seriesObject.series, period);
 			    }
 			}
+			seriesObject.min = funct.reduce(seriesObject.series, function (a, b) {return a.y > b.y ? b : a;}).y;
+			seriesObject.max = funct.reduce(seriesObject.series, function (a, b) {return a.y > b.y ? a : b;}).y;
 			return seriesObject;
 		    });
-
+		    
 		    plotHolder.height = .97 *(style.get("graphHolder", "height") - 35) / response.symbols.length;
 		    plotHolder.width = style.get("graphHolder", "width") * .97;
 		    plotHolder.title = plotHolder.title.slice(0,-5);
+		    plotHolder.conversionFunction = plt.conversionFunction;
 		    plotHolder.unit = plt.unit;
+		    plotHolder.min = funct.reduce(plotHolder.plots, 
+						  function (a, b) {return a.min > b.min ? b : a;}).min;
+		    plotHolder.max = funct.reduce(plotHolder.plots, 
+						  function (a, b) {return a.max > b.max ? a : b;}).max;
 		    topic.publish("addDataSet", plotHolder);
 		});
 		topic.publish("rsize");

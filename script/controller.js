@@ -23,16 +23,19 @@ require(
      "dijit/layout/ContentPane",
      "dojox/charting/plot2d/Areas",
      "dojox/charting/plot2d/MarkersOnly",
+     "dojox/charting/Chart",
      "dojox/charting/widget/Chart2D",
      "dojox/charting/action2d/_IndicatorElement",
      "dojo/sniff",
      "dojo/_base/connect",
      "dojo/_base/window",
+     "dojox/charting/widget/Legend",
+     "dijit/form/CheckBox",
      "dojo/domReady!"
     ], function (dom, on, topic, style, query, registry, ToggleButton, date, funct, domConstruct, 
 		 ChartWidgit, theme, Lines, Tooltip, Magnify, request, Indicator, ready, script, Default,
 		 SelectableLegend, ContentPane, Areas, MarkersOnly, Chart, ChartWidgit2D, IndicatorElement,
-		 has, hub, win) {
+		 has, hub, win, Legend, CB) {
 
 	on(registry.byId("timeAutoUpdate"), "change", function (e) {
 	    var button = registry.byId("timeAutoUpdate");
@@ -127,42 +130,48 @@ require(
 	    topic.publish("dateChange", date.add(new Date(), "hour", -1 * registry.byId("timeOptionsSelect").value), new Date());
 	});
 
-	/*        topic.subscribe("addOption", function (plotHolder) {
-	 registry.byId("optionsGrid").addChild(
-	 new ToggleButton({
-	 showLabel: true,
-	 checked: true,
-	 label: plotHolder.title + " - On",
-	 id: plotHolder.title + "Toggle",
-	 "class": "option",
-	 onChange: function (val) { 
-	 if (val) {
-	 this.set("label", plotHolder.title + " - On");
-	 topic.publish("addDataSet", plotHolder);
-	 }
-	 else {
-	 this.set("label", plotHolder.title + " - Off");
-	 topic.publish("removePlot", plotHolder);
-	 }
-	 }
-	 })
-	 );
-         });
-	 */
 	topic.subscribe("addLegend", function (plotHolder) {
-	    var chartWidget  = registry.byId(plotHolder.title);
-	    var legend = new SelectableLegend({
-		chart: chartWidget.chart,
-		id: plotHolder.title + "Legend",
-		"class":"legend"
+	    var legenddiv = new ContentPane ({
+		id: plotHolder.title + "LegendDiv"
 	    });
-	    registry.byId("key").addChild(legend);
+
+	    var legend = new Legend ({
+		chart: registry.byId(plotHolder.title),
+		id: plotHolder.title + "Legend",
+		"class": "legend"
+	    });
+
+	    var plotDisableButton = new CB ({
+		id: plotHolder.title + "LegendCheck",
+		checked: true,
+		valuee: true
+	    });
+	    on(plotDisableButton, "click", function () { 
+		if (!plotDisableButton.valuee) {
+		    plotDisableButton.valuee = true;
+		    topic.publish("showPlot", plotHolder);
+		    topic.publish("rsize");
+		} else {
+		    plotDisableButton.valuee = false;
+		    topic.publish("hidePlot", plotHolder);
+		    topic.publish("rsize");
+		}
+	    });
+	    legenddiv.addChild(plotDisableButton);
+	    legenddiv.addChild(legend);
+	    registry.byId("key").addChild(legenddiv);
 	});
+
         topic.subscribe("rsize", function (e) {
 	    var charts = registry.byClass("graph");
+	    var num = 0;
+	    funct.forEach(charts, function (item) {
+		if (style.get(item.domNode, "display") === "block") {
+		    num += 1;
+		}
+	    });
 	    registry.byId("graphHolder").resize();
-	    var graphs = query(".graph");
-	    var percentage = .97 *(style.get("graphHolder", "height") - 35) / (graphs.length);
+	    var percentage = .97 *(style.get("graphHolder", "height") - 35) / num;
 	    var width = style.get("graphHolder", "width") * .97;
 	    charts.forEach(function (item) {
 		item.chart.resize({h:percentage, w:width});//add support to resize the stuff.
@@ -195,20 +204,23 @@ require(
 		} else {
 		    alert("The sensor does not posses the ability to see into the future.");
 		}
-	    } else { 
+		    } else { 
 		alert("Start time must before end time.");
 	    }
 	    
         });
 
-        topic.subscribe("removePlot", function (plotHolder) {
-	    var plot = registry.byId(plotHolder.title);
-	    if (!(typeof plot === "undefined" )){
-	        plot.destroy();
+        topic.subscribe("hidePlot", function (plotHolder) {
+	    style.set(plotHolder.title, "display", "none");
+/*	    var plot = registry.byId(plotHolder.title);
+	    if (!(typeof plot === "undefined" )) {
+	        plot.destroyRecursive();
 	    }
-	    topic.publish("rsize");
+*/
         });
-
+        topic.subscribe("showPlot", function (plotHolder) {
+	    style.set(plotHolder.title, "display", "block");
+        });
 	topic.subscribe("removeLegend", function (plotHolder) {
 	    var legend = registry.byId(plotHolder.title + "Legend");
 	    if (!(typeof legend === "undefined")) {
@@ -268,34 +280,30 @@ require(
 	    if (plotHolder.title === "Wind Direction") {
 		chartType = MarkersOnly;
 	    }
+
 	    //enable cash, add labelSizeChange (if drop labels is not working) if add zoom feature.
 	    holder.chart
-		.addPlot("default", {type: chartType, markers:false, lines: true, stroke: {width: 2}, height: plotHolder.height, width: plotHolder.width})
-		.addPlot("other", {type: chartType, hAxis: "x", vAxis: "other y",lines:true})
-	        .addAxis("x", {fixLower: "major", fixUpper: "minor", labelFunc: formatDate, titleOrientation:"away", titleGap: 5})
-	        .addAxis("y", {vertical: true, fixLower: "minor", fixUpper: "major", title: plotHolder.unit, titleOrientation:"away", titleGap: 8}) 
-		.addAxis("other y", {vertical: true, leftBottom:false})
+		.addPlot("default", {type: chartType, markers:false, lines: true, stroke: {width: 2}, margins: {l:0, t:0, r:0, b:0}})
+	        //.addAxis("x", {fixLower: "major", fixUpper: "minor", labelFunc: formatDate, titleOrientation:"away", 
+ 		//	       titleGap: 5, min: plotHolder.plots[0].series[0].x, max: plotHolder.plots[0].series[plotHolder.plots[0].series.length - 1].x})
+	        .addAxis("y", {vertical: true, fixLower: "minor", fixUpper: "major", title: plotHolder.unit, titleOrientation:"away", titleGap: 8, natural:true}) 
 	        .setTheme(theme);
 
-	    holder.chart.title = plotHolder.title;
-	    holder.chart.titleGap = 10;
+
+	    //holder.chart.title = plotHolder.title;
+	    holder.chart.titleGap = 0;
 	    holder.chart.titleFont = "15pt";
 
 	    var yOffset = 20;
 	    funct.forEach(plotHolder.plots, function (seriesObject, index) {
-
 		var clr = colorHolder[seriesObject.title];
 		if (typeof clr === "undefined") {
 		    clr = getColor();
 		    colorHolder[seriesObject.title] = clr;
 		}
-		/* 
-		 var clr = "black";
-		 if(index !== 0) {
-		 clr = "red";
-		 }
-		 */
+
 		holder.chart.addSeries(seriesObject.title, seriesObject.series, {plot:"default", color: clr, width: 1});
+
 		
 		//add vertical indicator to chart
 		var interactor = new Indicator(holder.chart, "default", { //have to remember to change series
@@ -342,10 +350,16 @@ require(
 		};
 		topic.publish("removeLoading", seriesObject.title);
 	    });
-	    holder.chart.render();
-	    if (dom.byId(plotHolder.title + "Toggle") === null) {
-		topic.publish("addOption", plotHolder);
+
+	    var xqp = plotHolder.conversionFunction;
+	    if (typeof xqp !== "undefined") {
+		holder.chart
+		    .addPlot("other", {type: chartType, hAxis: "x", vAxis: "other y", lines:true})
+		    .addAxis("other y", {vertical: true, fixLower:"major", fixUpper: "major", leftBottom: false, 
+					 min: xqp(plotHolder.min), max: xqp(plotHolder.max), title: plotHolder.otherLabel, titleOrientation:"away"});
 	    }
+
+	    holder.chart.render();
 	    if (dom.byId(plotHolder.title + "Legend") === null) {
 		topic.publish("addLegend", plotHolder);
 	    }
