@@ -31,11 +31,14 @@ require(
      "dojo/_base/window",
      "dojox/charting/widget/Legend",
      "dijit/form/CheckBox",
+     "dojo/mouse",
+     "dojo/dom-geometry",
+     "dojo/_base/lang",
      "dojo/domReady!"
     ], function (dom, on, topic, style, query, registry, ToggleButton, date, funct, domConstruct, 
 		 ChartWidgit, theme, Lines, Tooltip, Magnify, request, Indicator, ready, script, Default,
 		 SelectableLegend, ContentPane, Areas, MarkersOnly, Chart, ChartWidgit2D, IndicatorElement,
-		 has, hub, win, Legend, CB) {
+		 has, hub, win, Legend, CB, mouse, domGeom, lang) {
 
 	on(registry.byId("timeAutoUpdate"), "change", function (e) {
 	    var button = registry.byId("timeAutoUpdate");
@@ -237,7 +240,45 @@ require(
                 //have to remove the splitter crated by the border container
             });
         });
-	
+
+	topic.subscribe("configureIndicators", function () {
+	    funct.forEach(registry.byClass("graph"), function (item) {
+		on(item, "mouseover", function (e) {
+		    funct.forEach(registry.byClass("indicator"), function (indicator) {
+			var output = domGeom.position(indicator.chart.node, false);
+			/*
+			on.emit(indicator.chart, "mouseover", {
+			    bubbles: false,
+			    cancelable: true,
+			    pageX: e.clientX,
+			    pageY: output.y - 10
+			});
+			 */
+			/*
+			indicator.onMouseMove({
+			    bubbles: false,
+			    cancelable: true,
+			    buttons: 0,
+			    pageX: e.clientX,
+			    pageY: output.y - 10,
+			    x: e.clientX,
+			    y: output.y,
+			    clientX: e.clientX,
+			    clientY: output.y - 10,
+			    layerX: e.layerX,
+			    layerY: output.y - 10
+			}); 
+			 */
+			
+			e.pageX = e.clientX;
+			e.pageY = output.y - 10;
+			indicator.onMouseMove(e);
+
+		    });
+
+		});
+	    });
+	});
 	function formatDate(d) {
 	    var dee = new Date(parseInt(d));
 	    var hldr = dee.toString().split(" ").slice(0, 5);
@@ -256,7 +297,8 @@ require(
 	};
 	var dispFunct = function (name) { 
 	    return function (firstDataPoint, secondDataPoint, fixed, precision) {
-		return name + " = (" + formatDate(firstDataPoint.x.getTime().toString()) + "  ,   " + firstDataPoint.y.toFixed(2) + ")";
+		var time = firstDataPoint.x.toTimeString().split(" ")[0];
+		return name + " = (" + time + "  ,   " + firstDataPoint.y.toFixed(2) + ")";
 	    };
 	};
 
@@ -284,8 +326,8 @@ require(
 	    //enable cash, add labelSizeChange (if drop labels is not working) if add zoom feature.
 	    holder.chart
 		.addPlot("default", {type: chartType, markers:false, lines: true, stroke: {width: 2}, margins: {l:0, t:0, r:0, b:0}})
-	        //.addAxis("x", {fixLower: "major", fixUpper: "minor", labelFunc: formatDate, titleOrientation:"away", 
- 		//	       titleGap: 5, min: plotHolder.plots[0].series[0].x, max: plotHolder.plots[0].series[plotHolder.plots[0].series.length - 1].x})
+	        .addAxis("x", {fixLower: "major", fixUpper: "minor", labelFunc: formatDate, titleOrientation:"away", 
+ 			       titleGap: 5, min: plotHolder.plots[0].series[0].x, max: plotHolder.plots[0].series[plotHolder.plots[0].series.length - 1].x})
 	        .addAxis("y", {vertical: true, fixLower: "minor", fixUpper: "major", title: plotHolder.unit, titleOrientation:"away", titleGap: 8, natural:true}) 
 	        .setTheme(theme);
 
@@ -306,15 +348,19 @@ require(
 
 		
 		//add vertical indicator to chart
-		var interactor = new Indicator(holder.chart, "default", { //have to remember to change series
+		var indicator = new Indicator(holder.chart, "default", { //have to remember to change series
+		    id: seriesObject.title + "indicator",
 		    dualIndicator: true, 
 		    series: seriesObject.title, 
 		    labelFunc: dispFunct(seriesObject.title), 
-		    offset: {x: 0, y: yOffset * index}, 
-		    "class": "interactor",
+		    offset: {x: 0, y: yOffset * index},
+		    "class": "indicator",
 		    mouseOver: true
 		});
-		interactor.onMouseDown = function () {
+		indicator.id = seriesObject.title + "indicator";
+		indicator.class = "indicator";
+		registry.add(indicator);
+/*		interactor.onMouseDown = function () {
 		    funct.forEach(registry.byClass("interactor"), function (item) {
 			item._isMouseDown = true;
 			if(has("ie")){
@@ -331,13 +377,13 @@ require(
 		interactor.onMouseMove = function (event) {
 		    funct.forEach(registry.byClass("interactor"), function (item) {
 			if(item._isMouseDown || item.opt.mouseOver) {
-			    item._onMouseSingle(event);
+			    item._onMouseSingle(interactor);
 			    
 			}
 		    });
 		};
 				
-		interactor.onMouseUp = function(event){
+		event.onMouseUp = function(event){
 		    funct.forEach(registry.byClass("interactor"), function (item) {
 			var plot = item.chart.getPlot(item._uName);
 			plot.stopTrack();
@@ -348,9 +394,12 @@ require(
 			item.chart.render();
 		    });
 		};
+*/
+
 		topic.publish("removeLoading", seriesObject.title);
 	    });
-
+	    
+	    
 	    var xqp = plotHolder.conversionFunction;
 	    if (typeof xqp !== "undefined") {
 		holder.chart

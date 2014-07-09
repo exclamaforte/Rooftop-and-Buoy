@@ -169,6 +169,7 @@ require(
 		    topic.publish("addDataSet", plotHolder);
 		});
 		topic.publish("rsize");
+		topic.publish("configureIndicators");
 	    }, function (error) {
 		alert(error);
 		console.log(error);
