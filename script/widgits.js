@@ -65,6 +65,16 @@ require (
 	var customTime = new ContentPane({
 	    id: "customTime"
 	});
+	var sth = new ContentPane({
+	    id: "sth",
+	    innerHTML:"Start "
+	});
+
+	var eth = new ContentPane({
+	    id: "eth",
+	    innerHTML:"End "
+	});
+
         //----------------content-----------------------------------------------------------------------------------------------
 /*
         var optionsGrid = new TableContainer({
@@ -116,8 +126,8 @@ require (
         });
         var toggleButton = new Button({
 	    id: "toggleButton",
-	    value: false,
-	    label: "Hide Controls"
+	    value: true,
+	    label: "Show Controls"
         }); 
 
 
@@ -189,7 +199,11 @@ require (
 	    cancel: [],
 	    value: "off"
 	});
-
+	var disableIndicators = new Button ({
+	    id: "disableIndicators",
+	    label: "Disable Indicators",
+	    value: false
+	});
         //=====--building the dom--=======
 
 	//display.addChild(optionsGrid);
@@ -223,11 +237,12 @@ require (
 	autoUpdateContainer.addChild(timeAutoUpdate);
 	//timeControls.addChild(timeOptionsSelect);
 	//timeControls.addChild(autoUpdateContainer);
-
-	customTime.addChild(startDate);
-	customTime.addChild(endDate);
-        customTime.addChild(startTime);
-        customTime.addChild(endTime);
+	sth.addChild(startTime);
+	sth.addChild(startDate);
+	eth.addChild(endTime);
+	eth.addChild(endDate);
+	customTime.addChild(sth);
+	customTime.addChild(eth);
         customTime.addChild(timeUpdateButton);
 
 	time.addChild(timeOptionsSelect);
@@ -237,16 +252,20 @@ require (
         //controls.addChild(display);
         //controls.addChild(downloadImagePane);
 
-        controls.addChild(time);
 	controls.addChild(key);
+        controls.addChild(time);
 	domConstruct.place(toggleButton.domNode, graphHolder.domNode, "before");
 
 	graphHolder.addChild(toggleButton);
+	graphHolder.addChild(disableIndicators);
         appLayout.addChild(controls);
         appLayout.addChild(graphHolder);
 
         //=====Button Behavior=====
 	style.set("customTime", "display", "none");
+	style.set("controls", "display", "none");
+	style.set("graphHolder", "left", "0px" );
+	style.set("graphHolder", "width", "100%" );
 
 	appLayout.startup();
 

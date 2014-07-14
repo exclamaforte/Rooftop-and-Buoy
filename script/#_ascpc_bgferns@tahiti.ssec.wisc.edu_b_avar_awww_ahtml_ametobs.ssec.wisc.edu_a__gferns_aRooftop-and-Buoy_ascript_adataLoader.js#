@@ -166,7 +166,7 @@ require(
 			return seriesObject;
 		    });
 		    plotHolder.otherLabel = plt.otherLabel;
-		    plotHolder.height = .96 *(style.get("graphHolder", "height") - 35) / (fullStructure.length - hidden.length);
+		    plotHolder.height = .96 *(style.get("graphHolder", "height") - 35) / (fullStructure.length);
 		    plotHolder.width = style.get("graphHolder", "width") * .97;
 		    plotHolder.title = plotHolder.title.slice(0,-5);
 		    plotHolder.conversionFunction = plt.conversionFunction;

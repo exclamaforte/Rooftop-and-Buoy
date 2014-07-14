@@ -7,7 +7,7 @@ html, body {
 
 #key {
   width:250px;
-  background-color:#dfdfdf;
+  background-color:#efefef;
 }
 #autoUpdateContainer {
   width: 200px;
@@ -23,12 +23,35 @@ html, body {
 #controls {
   padding:0px;
   border:0px;
+  background-color:#efefef;
 }
 #timeControls {
   width:250px;
+  padding:0px;
+  border:0px;
+  margin:0px;
 }
 #customTime {
-  width: 600px;
+  width: 230px;
+  padding:4px;
+  border:0px;
+  margin:0px;
+}
+#sth {
+  width: 105px;
+  padding:0px;
+  border:0px;
+  margin:0px;
+}
+#eth {
+  left: 107px;
+  width: 105px;
+  padding:0px;
+  border:0px;
+  margin:0px;
+}
+#widget_startTime, #widget_startDate, #widget_endTime, #widget_endDate {
+  width: 100px
 }
 #time {
   background-color:#efefef;
@@ -40,6 +63,7 @@ html, body {
   width:80%;
   height:100%;
   background-color:#efefef;
+  overflow: hidden;
 }
 div {
   padding:0px;
@@ -57,6 +81,9 @@ div {
   margin:0;
 }
 
+.legenddiv {
+
+}
 
 #viewsChart {
   width: 550px;
