@@ -1,12 +1,12 @@
 require(
     ["dojo/topic",
      "dojox/lang/functional",
-     "dojo/request",
+     "dojo/request/xhr",
      "dijit/registry",
      "dojo/date",
      "dojo/dom-style",
      "dojo/domReady!"
-    ], function (topic, funct, request, registry, date, style) {
+    ], function (topic, funct, xhr, registry, date, style) {
         var dataTypes = {
 	    airTemp : "t",
 	    relativeHumidity: "rh",
@@ -97,16 +97,20 @@ require(
 	    });
 	    q = q.slice(0, -1);
 	    q = q + "&begin=" + stringDate(start) + "&end=" + stringDate(end);
-            request.get(url + "?" + q, {
+	    console.log(url + "?" + q);
+            xhr.get(url, {
+		query: q,
 	        handleAs: "json",
-	        timeout: 10000
+	        timeout: 100000
 	    }).then(function (response) {
 		var hidden = getHiddenPlots();
+		topic.publish("removeLoading");
+		topic.publish("addProcessing");
 		topic.publish("removePlots");
 		topic.publish("removeOptions");
 		topic.publish("removeLegends");
 		topic.publish("removeIndicators");
-		topic.publish("hideHideControls");		
+		topic.publish("Controls");		
 
 		//formatting the time data
 		response.stamps = funct.map(response.stamps, function (item) {//"2014-05-20 16:07:01"
@@ -166,8 +170,8 @@ require(
 			return seriesObject;
 		    });
 		    plotHolder.otherLabel = plt.otherLabel;
-		    plotHolder.height = .96 *(style.get("graphHolder", "height") - 35) / (fullStructure.length - hidden.length);
-		    plotHolder.width = style.get("graphHolder", "width") * .97;
+		    plotHolder.height = Math.floor((style.get("graphHolder", "height") - 35) / (fullStructure.length - hidden.length));
+		    plotHolder.width = Math.floor(style.get("graphHolder", "width") * .97);
 		    plotHolder.title = plotHolder.title.slice(0,-5);
 		    plotHolder.conversionFunction = plt.conversionFunction;
 		    plotHolder.unit = plt.unit;
@@ -179,11 +183,10 @@ require(
 		});
 		topic.publish("hidePlots", hidden);
 		topic.publish("updateLegend");
-		//topic.publish("rsize");
+		//topic.publish("hardrsize");
 		topic.publish("addIndicators");
 		topic.publish("configureIndicators");
-		topic.publish("showHideControls");
-		topic.publish("removeLoading");
+		topic.publish("removeProcessing");
 	    }, function (error) {
 		alert(error);
 		console.log(error);

@@ -36,37 +36,36 @@ require(
      "dojo/_base/lang",
      "dojox/charting/axis2d/Invisible",
      "dijit/form/Button",
+     "dojox/charting/axis2d/NoTicks",
      "dojo/domReady!"
     ], function (dom, on, topic, style, query, registry, ToggleButton, date, funct, domConstruct, 
 		 ChartWidgit, theme, Lines, Tooltip, Magnify, request, Indicator, ready, script, Default,
 		 CustomSelectableLegend, ContentPane, Areas, MarkersOnly, Chart, ChartWidgit2D, IndicatorElement,
-		 has, hub, win, Legend, CB, mouse, domGeom, lang, Invisible, Button) {
+		 has, hub, win, Legend, CB, mouse, domGeom, lang, Invisible, Button, NoTicks) {
 
 	on(registry.byId("timeAutoUpdate"), "change", function (e) {
 	    var button = registry.byId("timeAutoUpdate");
 	    if (button.checked === true && style.get("autoUpdateContainer", "display") === "block") { 
-		topic.publish("addAutoDataUpdate");
+		topic.publish("addAutoDataUpdate", button);
 	    } else {
-		topic.publish("cancelAutoDataUpdate");
+		topic.publish("cancelAutoDataUpdate", button);
 	    }
 	});
 
 	on(registry.byId("timeOptionsSelect"), "change", function (e) {
 	    var value = registry.byId("timeOptionsSelect").value;
+	    var button = registry.byId("timeAutoUpdate");
 	    if (value === -1) {
 		style.set("customTime", "display", "block");
 		style.set("autoUpdateContainer", "display", "none");
+		topic.publish("cancelAutoDataUpdate", button);
 	    } else {
 		style.set("customTime", "display", "none");
 		style.set("autoUpdateContainer", "display", "block");
 		topic.publish("dataUpdate");
-		if (registry.byId("timeAutoUpdate").checked === true) {
-		    topic.publish("addAutoDataUpdate");
+		if (button.checked === true) {
+		    topic.publish("addAutoDataUpdate", button);
 		}
-	    }
-	    topic.publish("cancelAutoDataUpdate");
-	    if (registry.byId("timeAutoUpdate").checked === true) {
-		topic.publish("addAutoDataUpdate");
 	    }
 	});
 
@@ -75,15 +74,50 @@ require(
 	    var startTime = registry.byId("startTime");
 	    var endDate = registry.byId("endDate");
 	    var endTime = registry.byId("endTime");
-	    var st = new Date(startDate.value.getFullYear(), startDate.value.getMonth(), startDate.value.getDay(),
-			      startTime.value.getHours(), startTime.value.getMinutes(), 
-			      startTime.value.getMinutes(), startTime.value.getSeconds(), 0);
-	    var et = new Date(endDate.value.getFullYear(), endDate.value.getMonth(), endDate.value.getDay(),
-			      endTime.value.getHours(), endTime.value.getMinutes(), 
-			      endTime.value.getMinutes(), endTime.value.getSeconds(), 0);				 
-	    topic.publish("dateChange", st, et);
+	    var st = new Date(startDate.value.getFullYear(),
+			      startDate.value.getMonth(), 
+			      startDate.value.getDay(),
+			      startTime.value.getHours(), 
+			      startTime.value.getMinutes(), 
+			      startTime.value.getSeconds(), 0);
+	    var et = new Date(endDate.value.getFullYear(), 
+			      endDate.value.getMonth(), 
+			      endDate.value.getDay(),
+			      endTime.value.getHours(), 
+			      endTime.value.getMinutes(), 
+			      endTime.value.getSeconds(), 0);				 
+	    if (date.difference(st, et, "day") > 0) {
+		style.set("time", "display", "none");
+		var confirmLongTime = new ContentPane({
+		    id: "confirmLongTime",
+		    innerHTML: '<p style="color:red"> Your time interval is quite long<br>and will take a long time to load<br></p>'
+		});
+		var confirmButton = new Button ({
+		    label: "Load",
+		    id: "confirmButton",
+		    onClick: function () {
+			topic.publish("dateChange", st, et);
+			registry.remove(confirmLongTime);
+			confirmLongTime.destroy();
+			style.set("time", "display", "block");
+		    } 
+		});
+		var denyButton = new Button ({
+		    label: "Cancel",
+		    id: "denyButton",
+		    onClick: function () {
+			registry.remove(confirmLongTime);
+			confirmLongTime.destroy();
+			style.set("time", "display", "block");
+		    } 
+		});
+		confirmLongTime.addChild(confirmButton);
+		confirmLongTime.addChild(denyButton);
+		registry.byId("controls").addChild(confirmLongTime);
+	    } else {
+		topic.publish("dateChange", st, et);
+	    }
 	});
-
 	on(registry.byId("disableIndicators"), "click", function (e) {
 	    var toggle = registry.byId("disableIndicators");
 	    if (toggle.value) {
@@ -113,7 +147,7 @@ require(
 		toggle.set("label", "Show Controls");
 		toggle.set("value", true);
 	    }
-	    topic.publish("rsize");
+	    topic.publish("hardrsize");
 	});
 
         on(window, "resize", function (e) {topic.publish("rsize");});
@@ -161,28 +195,48 @@ require(
 	    });
 	});
 
-	topic.subscribe("addLoading", function () {
-	    registry.byId("controls").addChild(new ContentPane({
-		id: "Loading2",
-		"class": "Loading",
-		innerHTML: "Loading Data from Server" 
-	    }));
+	topic.subscribe("addProcessing", function () {
+	    if (typeof registry.byId("processing") === "undefined") {
+		registry.byId("controls").addChild(new ContentPane({
+		    id: "processing",
+		    innerHTML: "Processing Data..." 
+		}));
+	    }
+	});
 
+	topic.subscribe("removeProcessing", function () {
+	    if (typeof registry.byId("processing") !== "undefined") {
+		registry.byId("processing").destroy();
+	    }
+	});
+
+	topic.subscribe("addLoading", function () {
+	    if (typeof registry.byId("Loading2") === "undefined") {
+		registry.byId("controls").addChild(new ContentPane({
+		    id: "Loading2",
+		    innerHTML: "Loading Data from Server..." 
+		}));
+	    }
 	});
 
 	topic.subscribe("removeLoading", function () {
-	    registry.byId("Loading2").destroy();
+	    if (typeof registry.byId("Loading2") !== "undefined") {
+		registry.byId("Loading2").destroy();
+	    }
 	});
-	var events = [];
-	topic.subscribe("addAutoDataUpdate", function () {
-	    events.concat(setInterval(function () {
-		topic.publish("dataUpdate");
-	    }, 4000));
+
+	topic.subscribe("addAutoDataUpdate", function (button) {
+	    if (typeof button.event === "undefined") {
+		button.event = setInterval(function () {
+		    topic.publish("dataUpdate");
+		}, 4000);
+	    }
 	});
-	topic.subscribe("cancelAutoDataUpdate", function () {
-	    funct.forEach(events, function (e) {
-		clearInterval(e);
-	    });
+	topic.subscribe("cancelAutoDataUpdate", function (button) {
+	    if (typeof button.event !== "undefined") {
+		clearInterval(button.event);
+		button.event = undefined;
+	    }
 	});
 	topic.subscribe("dataUpdate", function() {
 	    topic.publish("dateChange", date.add(new Date(), "hour", -1 * registry.byId("timeOptionsSelect").value), new Date());
@@ -197,7 +251,8 @@ require(
 	topic.subscribe("updateLegend", function () {
 	    funct.forEach(registry.byClass("graph"), function (item) {
 		if (style.get(item.id, "display") === "none") {
-		    registry.byId(item.id + "Legend").set("label", item.id + "- Enable");
+		    registry.byId(item.id + "Legend").set("label", formatName(item.id, 6) + "- Enable");
+		    registry.byId(item.id + "Legend").set("value", true);
 		}
 	    });
 	});
@@ -217,20 +272,26 @@ require(
 		    plotDisableButton.value = false;
 		    topic.publish("showPlot", plotHolder);
 		    style.set(plotDisableButton, "background-color", "Red");
-		    topic.publish("rsize");
 		} else {
 		    plotDisableButton.set("label" , nm + "- Enable");
 		    plotDisableButton.value = true;
 		    topic.publish("hidePlot", plotHolder);
 		    style.set(plotDisableButton, "background-color", "Blue");
-		    topic.publish("rsize");
 		}
+		topic.publish("hardrsize");
 	    });
 
 	    domConstruct.place(plotDisableButton.domNode, "key", "first");
 	});
-
-        topic.subscribe("rsize", function (e) {
+	
+	var makeNewTimeout = function (fun, time) {
+	    var timeout = 0;
+	    return function () {
+		clearTimeout(timeout);
+		timeout = setTimeout(fun, time);
+	    };
+	};
+	var rsizefunct = function () {
 	    var charts = registry.byClass("graph");
 	    var num = 0;
 	    funct.forEach(charts, function (item) {
@@ -238,15 +299,20 @@ require(
 		    num += 1;
 		}
 	    });
-
-	    registry.byId("graphHolder").resize();
-	    var percentage = (style.get("graphHolder", "height") - 35) / num;
+	    var percentage = Math.floor((style.get("graphHolder", "height") - 35) / num);
 	    var width = style.get("graphHolder", "width");
 	    charts.forEach(function (item) {
 		item.chart.resize({h:percentage, w:width});//add support to resize the stuff.
 	    });
+	};
+	var resizeHandler = makeNewTimeout(rsizefunct, 300);
+	
+        topic.subscribe("rsize", function () {
+	    resizeHandler();
         });
-
+	topic.subscribe("hardrsize", function () {
+	    rsizefunct();
+	});
 	topic.subscribe("removeOptions", function () {
 	    query(".option").forEach( function(item) {
                 domConstruct.destroy(item);
@@ -261,22 +327,18 @@ require(
 	    });
 	});
 
-	topic.subscribe("hideHideControls", function () {
-	    style.set("toggleButton", "display", "none");
-	});
-
-	topic.subscribe("showHideControls", function () {
-	    style.set("toggleButton", "display", "block");
-	});
-
         topic.subscribe("dateChange", function (sD, eD) {
 	    if (date.compare(sD, eD) < 0 ) {
-		if (date.compare(eD, new Date()) <= 0) {
-		    topic.publish("getData", sD, eD);
+		if (date.difference(sD, eD, "second") >= 10) {
+		    if (date.compare(eD, new Date()) <= 0) {
+			topic.publish("getData", sD, eD);
+		    } else {
+			alert("The sensor does not posses the ability to see into the future.");
+		    }
 		} else {
-		    alert("The sensor does not posses the ability to see into the future.");
+		    alert("Start time must 10 seconds before end time.");
 		}
-		    } else { 
+	    } else { 
 		alert("Start time must before end time.");
 	    }
 	    
@@ -284,15 +346,18 @@ require(
 
         topic.subscribe("hidePlot", function (plotHolder) {
 	    style.set(plotHolder.title, "display", "none");
+	    registry.byId(plotHolder.title).enabled = false;
         });
 
 	topic.subscribe("hidePlots", function (plotList) {
 	    funct.forEach(plotList, function (plot) {
 		style.set(plot.id, "display", "none");
+		plot.enabled = false;
 	    });
 	});
         topic.subscribe("showPlot", function (plotHolder) {
 	    style.set(plotHolder.title, "display", "block");
+	    registry.byId(plotHolder.title).enabled = true;
         });
 	
 	topic.subscribe("removeLegend", function (plotHolder) {
@@ -300,7 +365,6 @@ require(
 	    if (!(typeof legend === "undefined")) {
 		legend.destroy();
 	    }
-	    topic.publish("rsize");
 	});
 
         topic.subscribe("removePlots", function () {
@@ -338,10 +402,12 @@ require(
 	var dispFunct = function (name) { 
 	    return function (firstDataPoint, secondDataPoint, fixed, precision) {
 		var time = firstDataPoint.x.toTimeString().split(" ")[0];
-		return formatName(name, 3) + ":(" + time + "  ,   " + firstDataPoint.y.toFixed(2) + ")";
+		return formatName(name, 3) + ":(" + time + " , " + firstDataPoint.y.toFixed(2) + ")";
 	    };
 	};
-
+	var axisFunction = function (text, value, precision) {
+	    return value.toFixed(1).toString();
+	};
 	var getColor = getColorFromRotation();
 	var colorHolder = {};
         topic.subscribe("addDataSet", function (plotHolder) {
@@ -349,7 +415,8 @@ require(
 	        title: plotHolder.title,
 		margins: 0,
 	        id: plotHolder.title, 
-		"class": "graph"
+		"class": "graph",
+		style: "height: " + plotHolder.height.toString() + "px"
 	    });
 	    style.set(holder, "height", plotHolder.height.toString() + "px");
 	    style.set(holder, "width", plotHolder.width.toString() + "px");
@@ -365,14 +432,15 @@ require(
 		chartType = MarkersOnly;
 	    }
 	    holder.chart
-		.addPlot("default", {type: chartType, markers: false, lines: true, stroke: {width: 2}, margins: {l:0, t:0, r:0, b:0}})
-	        .addAxis("x", {labelFunc: formatDate, titleOrientation:"away", hidden: true,
+		.addPlot("default", {type: chartType, markers: false, lines: true, stroke: {width: 2}, margins: {l:0, t:0, r:0, b:0}, titleGap: 0})
+	        .addAxis("x", {type: NoTicks, labelFunc: formatDate, titleOrientation:"away", hidden: true,
  			       titleGap: 0, fontColor:"Black"}) 
-	        .addAxis("y", {fixLower: "major", fixUpper: "major",vertical: true, title: plotHolder.unit, titleOrientation:"away", titleGap: 8, natural:true}) 
+	        .addAxis("y", {fixLower: "major", fixUpper: "major",vertical: true, title: plotHolder.unit, titleOrientation:"away", 
+			       titleGap: 8, natural:true, labelFunc:axisFunction}) 
 	        .setTheme(theme);
 	    var mg = 6;
 	    holder.chart.margins = {l:mg, t:mg, r:mg, b:mg};
-
+	    holder.enabled = true;
 	    //holder.chart.title = plotHolder.title;
 	    holder.chart.titleGap = 0;
 	    holder.chart.titleFont = "15pt";
