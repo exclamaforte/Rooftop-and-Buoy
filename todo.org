@@ -39,3 +39,10 @@ x5. Align x axis.
 performance:
 1. initialize the charts to the correct size.
 2. 
+
+performance notes: 
+keep-alive to reduce connection time
+split accross multiple domain names to increase paralellization 
+change expiration policies
+write script to help with minification
+minify code clojure compiler advanced feature
