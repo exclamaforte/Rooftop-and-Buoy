@@ -49,6 +49,7 @@ require (
 	var key = new ContentPane({
 	    id: "key", region: "right"
         }); 
+
         var display = new ContentPane({
             title: "Display", id: "display", 
 	    "class": "controlDiv"
@@ -76,12 +77,15 @@ require (
 	});
 
         //----------------content-----------------------------------------------------------------------------------------------
-/*
-        var optionsGrid = new TableContainer({
-	    id: "optionsGrid",
-	    cols: 2
-        });
-*/
+	var disableAll = new Button({
+	    id: "disableAll",
+	    label: "Disable All"
+	});
+	var enableAll = new Button({
+	    id: "enableAll",
+	    label: "Enable All"
+	});
+
         var dataMenu = new DropDownMenu({style: "display: none;"});
         var imageMenu = new DropDownMenu({style: "display: none;"});
 
@@ -251,7 +255,8 @@ require (
 
         //controls.addChild(display);
         //controls.addChild(downloadImagePane);
-
+	key.addChild(disableAll);
+	key.addChild(enableAll);
 	controls.addChild(key);
         controls.addChild(time);
 	domConstruct.place(toggleButton.domNode, graphHolder.domNode, "before");

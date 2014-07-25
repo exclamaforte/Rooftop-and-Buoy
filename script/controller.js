@@ -1,30 +1,28 @@
 require(
-    ["dojo/dom",
-     "dojo/on",
-     "dojo/topic",
-     "dojo/dom-style",
-     "dojo/query",
-     "dijit/registry",
-     "dijit/form/ToggleButton",
-     "dojo/date",
+    ["dojo/dom", 
+     "dojo/on", 
+     "dojo/topic", 
+     "dojo/dom-style", 
+     "dojo/query", 
+     "dijit/registry", 
+     "dijit/form/ToggleButton", 
+     "dojo/date", 
      "dojox/lang/functional",
-     "dojo/dom-construct",
-     "dojox/charting/widget/Chart",
-     "dojox/charting/themes/Claro",
-     "dojox/charting/plot2d/Lines",
+     "dojo/dom-construct", 
+     "script/CustomWidget", 
+     "dojox/charting/themes/Claro", 
+     "dojox/charting/plot2d/Lines", 
      "dojox/charting/action2d/Tooltip",
-     "dojox/charting/action2d/Magnify",
-     "dojo/request",
-     "dojox/charting/action2d/CustomIndicator",
-     "dojo/ready",
-     "dojo/request/script",
+     "dojox/charting/action2d/Magnify", 
+     "dojo/request", 
+     "script/CustomIndicator", 
+     "dojo/ready", 
+     "dojo/request/script", 
      "dojox/charting/axis2d/Default",
-     "dojox/charting/widget/SelectableLegend",
-     "dijit/layout/ContentPane",
-     "dojox/charting/plot2d/Areas",
+     "dojox/charting/widget/SelectableLegend", 
+     "dijit/layout/ContentPane", 
+     "dojox/charting/plot2d/Areas", 
      "dojox/charting/plot2d/MarkersOnly",
-     "dojox/charting/Chart",
-     "dojox/charting/widget/Chart2D",
      "dojox/charting/action2d/_IndicatorElement",
      "dojo/sniff",
      "dojo/_base/connect",
@@ -34,14 +32,14 @@ require(
      "dojo/mouse",
      "dojo/dom-geometry",
      "dojo/_base/lang",
-     "dojox/charting/axis2d/Invisible",
      "dijit/form/Button",
-     "dojox/charting/axis2d/NoTicks",
+     "script/NoTicks",
+     "dojo/_base/array",
      "dojo/domReady!"
     ], function (dom, on, topic, style, query, registry, ToggleButton, date, funct, domConstruct, 
 		 ChartWidgit, theme, Lines, Tooltip, Magnify, request, Indicator, ready, script, Default,
-		 CustomSelectableLegend, ContentPane, Areas, MarkersOnly, Chart, ChartWidgit2D, IndicatorElement,
-		 has, hub, win, Legend, CB, mouse, domGeom, lang, Invisible, Button, NoTicks) {
+		 CustomSelectableLegend, ContentPane, Areas, MarkersOnly, IndicatorElement,
+		 has, hub, win, Legend, CB, mouse, domGeom, lang, Button, NoTicks, array) {
 
 	on(registry.byId("timeAutoUpdate"), "change", function (e) {
 	    var button = registry.byId("timeAutoUpdate");
@@ -51,6 +49,25 @@ require(
 		topic.publish("cancelAutoDataUpdate", button);
 	    }
 	});
+	on(dom.byId("disableAll"), "click", function (e) {
+	    funct.forEach(registry.byClass("legend"), function (item) {
+		var nm = formatName(item.id.slice(0, -6), 6);
+		item.set("label" , nm + "- Enable");
+		item.value = true;
+		topic.publish("hidePlot", item.id.slice(0, -6));
+	    });
+	    topic.publish("hardrsize");
+	});
+	on(dom.byId("enableAll"), "click", function (e) {
+	    funct.forEach(registry.byClass("legend"), function (item) {
+		var nm = formatName(item.id.slice(0, -6), 6);
+		item.set("label" , nm + "- Disable");
+		item.value = false;
+		topic.publish("showPlot", item.id.slice(0, -6));
+	    });
+	    topic.publish("hardrsize");
+	});
+
 
 	on(registry.byId("timeOptionsSelect"), "change", function (e) {
 	    var value = registry.byId("timeOptionsSelect").value;
@@ -62,7 +79,7 @@ require(
 	    } else {
 		style.set("customTime", "display", "none");
 		style.set("autoUpdateContainer", "display", "block");
-		topic.publish("dataUpdate");
+		dataUpdate();
 		if (button.checked === true) {
 		    topic.publish("addAutoDataUpdate", button);
 		}
@@ -76,21 +93,21 @@ require(
 	    var endTime = registry.byId("endTime");
 	    var st = new Date(startDate.value.getFullYear(),
 			      startDate.value.getMonth(), 
-			      startDate.value.getDay(),
+			      startDate.value.getDate(),
 			      startTime.value.getHours(), 
 			      startTime.value.getMinutes(), 
 			      startTime.value.getSeconds(), 0);
 	    var et = new Date(endDate.value.getFullYear(), 
 			      endDate.value.getMonth(), 
-			      endDate.value.getDay(),
+			      endDate.value.getDate(),
 			      endTime.value.getHours(), 
 			      endTime.value.getMinutes(), 
 			      endTime.value.getSeconds(), 0);				 
-	    if (date.difference(st, et, "day") > 0) {
+	    if (date.difference(st, et, "hour") > 30) {
 		style.set("time", "display", "none");
 		var confirmLongTime = new ContentPane({
 		    id: "confirmLongTime",
-		    innerHTML: '<p style="color:red"> Your time interval is quite long<br>and will take a long time to load<br></p>'
+		    innerHTML: '<p style="color:red"> This time segment has a lot of data<br>and might take a long time to load<br>Do you want to continue?</p>'
 		});
 		var confirmButton = new Button ({
 		    label: "Load",
@@ -167,6 +184,7 @@ require(
 
 	topic.subscribe("addIndicators", function () {
 	    funct.forEach(registry.byClass("graph"), function (holder) { 
+		var start = 10;
 		var yOffset = 20;
 		funct.forEach(holder.chart.series, function (seriesObject, index) {
 		    if (! hasIndicator(holder.chart, seriesObject)) {
@@ -176,7 +194,7 @@ require(
 			    dualIndicator: true, 
 			    series: seriesObject.name, 
 			    labelFunc: dispFunct(seriesObject.name), 
-			    offset: {x: 0, y: yOffset * index},
+			    offset: {x: 0, y: yOffset * index + start},
 			    "class": "indicator",
 			    mouseOver: true
 			});
@@ -193,21 +211,6 @@ require(
 		indicator.destroy();
 		registry.remove(indicator.id);
 	    });
-	});
-
-	topic.subscribe("addProcessing", function () {
-	    if (typeof registry.byId("processing") === "undefined") {
-		registry.byId("controls").addChild(new ContentPane({
-		    id: "processing",
-		    innerHTML: "Processing Data..." 
-		}));
-	    }
-	});
-
-	topic.subscribe("removeProcessing", function () {
-	    if (typeof registry.byId("processing") !== "undefined") {
-		registry.byId("processing").destroy();
-	    }
 	});
 
 	topic.subscribe("addLoading", function () {
@@ -228,8 +231,8 @@ require(
 	topic.subscribe("addAutoDataUpdate", function (button) {
 	    if (typeof button.event === "undefined") {
 		button.event = setInterval(function () {
-		    topic.publish("dataUpdate");
-		}, 4000);
+		    dataUpdate();
+		}, 60000);
 	    }
 	});
 	topic.subscribe("cancelAutoDataUpdate", function (button) {
@@ -238,15 +241,11 @@ require(
 		button.event = undefined;
 	    }
 	});
-	topic.subscribe("dataUpdate", function() {
-	    topic.publish("dateChange", date.add(new Date(), "hour", -1 * registry.byId("timeOptionsSelect").value), new Date());
-	});
 
-	function getHiddenPlots () {
-	    return funct.filter(registry.byClass("graph"), function (item) {
-		return style.get(item.id, "display") === "none";
-	    });
-	}
+	function dataUpdate() {
+	    var n = new Date();
+	    topic.publish("dateChange", date.add(n, "hour", -1 * registry.byId("timeOptionsSelect").value), n);
+	};
 
 	topic.subscribe("updateLegend", function () {
 	    funct.forEach(registry.byClass("graph"), function (item) {
@@ -280,10 +279,10 @@ require(
 		}
 		topic.publish("hardrsize");
 	    });
-
+	    //have to find the chart in the lowest in the list
 	    domConstruct.place(plotDisableButton.domNode, "key", "first");
 	});
-	
+
 	var makeNewTimeout = function (fun, time) {
 	    var timeout = 0;
 	    return function () {
@@ -302,9 +301,13 @@ require(
 	    var percentage = Math.floor((style.get("graphHolder", "height") - 35) / num);
 	    var width = style.get("graphHolder", "width");
 	    charts.forEach(function (item) {
-		item.chart.resize({h:percentage, w:width});//add support to resize the stuff.
+		item.chart.resize({h:percentage, w:width});
+	    });
+	    funct.forEach(registry.byId("indicator"), function (indicator) {
+	    	indicator.sizeUpdate = true;
 	    });
 	};
+
 	var resizeHandler = makeNewTimeout(rsizefunct, 300);
 	
         topic.subscribe("rsize", function () {
@@ -343,30 +346,62 @@ require(
 	    }
 	    
         });
-
-        topic.subscribe("hidePlot", function (plotHolder) {
-	    style.set(plotHolder.title, "display", "none");
-	    registry.byId(plotHolder.title).enabled = false;
-        });
-
-	topic.subscribe("hidePlots", function (plotList) {
-	    funct.forEach(plotList, function (plot) {
-		style.set(plot.id, "display", "none");
-		plot.enabled = false;
+	var lowestDisplay;
+	function getShownPlots () {
+	    return funct.filter(registry.byClass("graph"), function (item) {
+		return style.get(item.id, "display") === "block";
 	    });
-	});
-        topic.subscribe("showPlot", function (plotHolder) {
-	    style.set(plotHolder.title, "display", "block");
-	    registry.byId(plotHolder.title).enabled = true;
-        });
-	
-	topic.subscribe("removeLegend", function (plotHolder) {
-	    var legend = registry.byId(plotHolder.title + "Legend");
-	    if (!(typeof legend === "undefined")) {
-		legend.destroy();
+	}
+	function lowest () {
+	    var hidden = getShownPlots();
+	    return funct.foldr(hidden, function (previous, next) {
+		return order.lessThan(previous.id, next.id)? previous : next;
+	    }, false);
+	}
+        topic.subscribe("hidePlot", function (plotHolder) { 
+	    var title = plotHolder.title;
+	    if (typeof plotHolder === "string") {
+		title = plotHolder;
+	    }
+	    style.set(title, "display", "none");
+	    registry.byId(title).enabled = false;
+	    var low2 = lowest();
+	    if ((low2 !== false) && (lowestDisplay.id !== low2.id)) {
+		lowestDisplay.chart.axes.x.destroy();
+		low2.chart.axes.x.destroy();
+		var xargs1 = {type: NoTicks, labelFunc: formatDate, titleOrientation:"away", hidden: true,
+ 			     titleGap: 0, fontColor:"Black", majorTicks: false};
+		var xargs2 = {type: Default, labelFunc: formatDate, titleOrientation:"away", hidden: true,
+ 			     titleGap: 0, fontColor:"Black", majorTicks: false};
+		lowestDisplay.chart.addAxis("x", xargs1);
+		low2.chart.addAxis("x", xargs2);
+		low2.chart.render();
+		lowestDisplay = low2;
 	    }
 	});
-
+        topic.subscribe("showPlot", function (plotHolder) {
+	    var title = plotHolder.title;
+	    if (typeof plotHolder === "string") {
+		title = plotHolder;
+	    }
+	    style.set(title, "display", "block");
+	    registry.byId(title).enabled = true;
+	    var low2 = lowest();
+	    if (lowestDisplay.id !== low2.id) {
+		lowestDisplay.chart.axes.x.destroy();
+		low2.chart.axes.x.destroy();
+		var xargs1 = {type: NoTicks, labelFunc: formatDate, titleOrientation:"away", hidden: true,
+ 			      titleGap: 0, fontColor:"Black", majorTicks: false};
+		var xargs2 = {type: Default, labelFunc: formatDate, titleOrientation:"away", hidden: true,
+ 			      titleGap: 0, fontColor:"Black", majorTicks: false};
+		lowestDisplay.chart.addAxis("x", xargs1);
+		low2.chart.addAxis("x", xargs2);
+		lowestDisplay.chart.render();
+		low2.chart.render();
+		lowestDisplay = low2;
+	    } 
+        });
+	
         topic.subscribe("removePlots", function () {
             registry.byClass("graph").forEach( function(item) {
 		item.destroy();
@@ -408,43 +443,86 @@ require(
 	var axisFunction = function (text, value, precision) {
 	    return value.toFixed(1).toString();
 	};
+
 	var getColor = getColorFromRotation();
 	var colorHolder = {};
-        topic.subscribe("addDataSet", function (plotHolder) {
+	
+        function PoSet () {
+	    this.order = [];
+	    this.length = 0;
+	}
+	PoSet.prototype.add = function (item) {
+	    if (!this.contains(item)) {
+		this.order.push(item);
+		this.length += 1;
+	    } 
+	};
+	PoSet.prototype.contains = function (item) {
+	    return 0 <= array.indexOf(this.order, item);
+	};
+	PoSet.prototype.lessThan = function (item1, item2) {
+	    if (this.contains(item1) && this.contains(item2)) {
+		return array.indexOf(this.order, item1) < array.indexOf(this.order, item2);
+	    } else {
+		return false;
+	    }
+ 	};
+	PoSet.prototype.remove = function (item) {
+	    var index = array.indexOf(this.order, item);
+	    if (index > -1) {
+		this.order.splice(index, 1);
+	    }
+	};
+	PoSet.prototype.last = function () {
+	    return this.order[0];
+	};
+	var order = new PoSet(); //contains the the order of the plots on the page using their names as keys.
+
+	topic.subscribe("addDataSet", function (plotHolder) {
+	    //creating chart widget
+	    var marg =  {l:6,
+			 t:6,
+			 r:0,
+			 b:2};
 	    var holder = new ChartWidgit({
 	        title: plotHolder.title,
-		margins: 0,
+		margins: marg,
 	        id: plotHolder.title, 
 		"class": "graph",
 		style: "height: " + plotHolder.height.toString() + "px"
 	    });
-	    style.set(holder, "height", plotHolder.height.toString() + "px");
-	    style.set(holder, "width", plotHolder.width.toString() + "px");
+	    //setting the size of the underlying plot so that we dont have to render twice.
 	    holder.chart.surface.setDimensions(plotHolder.width, plotHolder.height);
-
-	    holder.chart.plotArea = {
-		height: plotHolder.height, 
-		width: plotHolder.width
-	    };
+	    
 	    domConstruct.place(holder.domNode, "graphHolder", "first");
 	    var chartType = Lines;
+	    var yargs = {fixLower: "major", fixUpper: "major",vertical: true, title: plotHolder.unit, titleOrientation:"away", 
+			 natural:true, labelFunc:axisFunction, minorTicks: false, titleGap: 1};
+	    var xargs = {type: NoTicks, labelFunc: formatDate, titleOrientation:"away", hidden: true,
+ 			 titleGap: 0, fontColor:"Black", majorTicks: false};
 	    if (plotHolder.title === "Wind Direction") {
 		chartType = MarkersOnly;
+		yargs.from = 0;
+		yargs.to = 360;
+		yargs.majorTickStep = 90;
+	    }
+	    if (plotHolder.title === "Accumulated Precipitation") {
+		if (plotHolder.min === plotHolder.max) {
+		    yargs.from = 0;
+		    yargs.to = .2;
+		    yargs.titleGap = 20;
+		}
+	    }
+	    if (order.length === 0) {
+		xargs.type = Default;
+		lowestDisplay = holder;
 	    }
 	    holder.chart
 		.addPlot("default", {type: chartType, markers: false, lines: true, stroke: {width: 2}, margins: {l:0, t:0, r:0, b:0}, titleGap: 0})
-	        .addAxis("x", {type: NoTicks, labelFunc: formatDate, titleOrientation:"away", hidden: true,
- 			       titleGap: 0, fontColor:"Black"}) 
-	        .addAxis("y", {fixLower: "major", fixUpper: "major",vertical: true, title: plotHolder.unit, titleOrientation:"away", 
-			       titleGap: 8, natural:true, labelFunc:axisFunction}) 
+	        .addAxis("x", xargs) 
+	        .addAxis("y", yargs) 
 	        .setTheme(theme);
-	    var mg = 6;
-	    holder.chart.margins = {l:mg, t:mg, r:mg, b:mg};
 	    holder.enabled = true;
-	    //holder.chart.title = plotHolder.title;
-	    holder.chart.titleGap = 0;
-	    holder.chart.titleFont = "15pt";
-
 
 	    funct.forEach(plotHolder.plots, function (seriesObject, index) {
 		var clr = colorHolder[seriesObject.title];
@@ -457,31 +535,32 @@ require(
 
 	    var xqp = plotHolder.conversionFunction;
 	    if (typeof xqp !== "undefined") {
+		var propertyObject = {vertical: true, fixLower:"major", fixUpper: "major", leftBottom: false, minorTicks: false, 
+				      title: plotHolder.otherLabel, titleOrientation:"away", titleGap: 8, natural:true};
 		if (plotHolder.title === "Wind Direction") {
-		    holder.chart
-			.addPlot("other", {type: chartType, hAxis: "x", vAxis: "other y", lines:true, margins:{l:0, t:0, r:0, b:0}})
-			.addAxis("other y", {vertical: true, fixLower:"major", fixUpper: "major", leftBottom: false, 
-					     title: plotHolder.otherLabel, titleOrientation:"away", titleGap: 8, natural:true, 
-					     labels: [
-						 {value: 0, text: "N"},
-						 {value: 360, text: "N"},
-						 {value: 90, text: "E"},
-						 {value: 180, text: "S"},
-						 {value: 270, text: "W"}
-					     ]}
-				); 
+		    propertyObject.labels = [
+			{value: 0, text: "N"},
+			{value: 90, text: "E"},
+			{value: 180, text: "S"},
+			{value: 270, text: "W"},
+			{value: 360, text: "N"}
+		    ];
+		    propertyObject.from = 0;
+		    propertyObject.to = 360;
+		    propertyObject.majorTickStep = 90;
 		} else {
-		    holder.chart
-			.addPlot("other", {type: chartType, hAxis: "x", vAxis: "other y", lines:true, margins:{l:0, t:0, r:0, b:0}})
-			.addAxis("other y", {vertical: true, fixLower:"major", fixUpper: "major", leftBottom: false, 
-					     min: xqp(plotHolder.min), max: xqp(plotHolder.max), 
-					     title: plotHolder.otherLabel, titleOrientation:"away", titleGap: 8, natural:true}); 
+		    propertyObject.min = xqp(plotHolder.min);
+		    propertyObject.max = xqp(plotHolder.max); 
 		}
+	    holder.chart
+		    .addPlot("other", {type: chartType, hAxis: "x", vAxis: "other y", lines:true, margins:{l:0, t:0, r:0, b:0}})
+		    .addAxis("other y", propertyObject);
 	    }
 
 	    holder.chart.render();
 	    if (dom.byId(plotHolder.title + "Legend") === null) {
 		topic.publish("addLegend", plotHolder);
 	    }
+	    order.add(plotHolder.title);
 	});
     });

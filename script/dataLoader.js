@@ -87,7 +87,7 @@ require(
 		return style.get(item.id, "display") === "none";
 	    });
 	}
-	var maxPoints = 100;
+	var maxPoints = 200;
         topic.subscribe("getData", function (start, end) {
 	    topic.publish("addLoading");
 	    var url = "http://metobs.ssec.wisc.edu/app/rig/tower/data/json";
@@ -104,20 +104,15 @@ require(
 	        timeout: 100000
 	    }).then(function (response) {
 		var hidden = getHiddenPlots();
-		topic.publish("removeLoading");
-		topic.publish("addProcessing");
 		topic.publish("removePlots");
 		topic.publish("removeOptions");
 		topic.publish("removeLegends");
 		topic.publish("removeIndicators");
 		topic.publish("Controls");		
-
 		//formatting the time data
 		response.stamps = funct.map(response.stamps, function (item) {//"2014-05-20 16:07:01"
-		    var parsed = funct.map(item.split(/:| |-/), function (item) {
-			return parseInt(item);
-		    });
-		    return new Date(parsed[0], parsed[1] - 1, parsed[2], parsed[3], parsed[4], parsed[5], 0); 
+		    item = item.replace(/-/g, "/") + " UTC";
+		    return new Date(item); 
 		});
 
 		var fullStructure = [new Direction (["accumulated_precipitation"], "in", function (item) {return item * 25.4;}, "mm"),
@@ -181,14 +176,19 @@ require(
 						  function (a, b) {return a.max > b.max ? a : b;}).max;
 		    topic.publish("addDataSet", plotHolder);
 		});
-		topic.publish("hidePlots", hidden);
+
+		funct.forEach(hidden, function (plot) {
+		    style.set(plot.id, "display", "none");
+		    plot.enabled = false;
+		});
 		topic.publish("updateLegend");
+		topic.publish("removeLoading");
 		//topic.publish("hardrsize");
 		topic.publish("addIndicators");
 		topic.publish("configureIndicators");
-		topic.publish("removeProcessing");
 	    }, function (error) {
-		alert(error);
+		alert("Problem fectching data.");
+		topic.publish("removeLoading");
 		console.log(error);
 	    });
         });
@@ -198,5 +198,9 @@ require(
 	    return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 	};
 
-        topic.publish("dataUpdate");
+	function dataUpdate() {
+	    var n = new Date();
+	    topic.publish("dateChange", date.add(n, "hour", -1 * registry.byId("timeOptionsSelect").value), n);
+	};
+	dataUpdate();
     });

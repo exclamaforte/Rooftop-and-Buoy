@@ -34,11 +34,9 @@ x3. ask about adding stuff to metobs.
 x4. make plots all different colors.
 x5. Align x axis.
 
+todo:
+remove reference to dom-geometry getMarginBox
 
-
-performance:
-1. initialize the charts to the correct size.
-2. 
 
 performance notes: 
 keep-alive to reduce connection time
@@ -46,3 +44,29 @@ split accross multiple domain names to increase paralellization
 change expiration policies
 write script to help with minification
 minify code clojure compiler advanced feature
+
+
+
+
+
+
+
+
+List of events:
+addAutoDataUpdate
+cancelAutoDataUpdate
+dateChange
+addIndicators
+removeIndicators
+hardresize
+rsize
+addProcessing
+removeProcessing
+addLoading
+removeLoading
+removeOptions
+removeLegends
+dateChange
+hidePlot
+hidePlots
+removePlots
