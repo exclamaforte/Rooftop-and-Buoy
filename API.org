@@ -1,0 +1,72 @@
+* Formats:
+** csv
+** JSON
+** JSONP
+** XML
+* Base URL:
+** http://metobs.ssec.wisc.edu/app
+* Time Queries:
+** Time Queries provide a uniform filtering interface for data sets.
+** begin
+*** Optional
+**** false
+*** Format
+**** <timestamp>
+**** -<step>
+***** A negative offset from end. Both end and begin cannot be offsets.
+** end
+*** Optional
+****  true
+*** Format
+**** <timestamp>
+**** +<step>
+***** A negative offset from begin. Both end and begin cannot be offsets.
+** filter
+*** Optional
+**** true
+*** Format:
+**** <filteropt>
+***** Data processing to be applied to the data
+**** <filteropt>|<step>
+***** Data processing to be applied to the data at and interval <step>
+** Time Query Data Format:
+*** <timestamp>:
+**** -<step>
+**** YYYY-MM-DD|<step>
+**** <milliseconds returned by system time call>
+**** current
+*** <filteropt>:
+**** average
+**** slice
+*** <step>:
+**** hh:mm:ss
+* Resource Information:
+** Supported sites
+*** http://metobs.ssec.wisc.edu/app/sites
+** Supported instruments at site
+*** http://metobs.ssec.wisc.edu/app/<site>/instruments
+** Supported data sets for instruments at site
+*** http://metobs.ssec.wisc.edu/app/<site>/<inst>/sets
+* Examples:
+** Structured Data request example
+*** http://metobs.ssec.wisc.edu/app/<site>/current.json
+**** Gets current conditions from <site>
+*** http://metobs.ssec.wisc.edu/app/<site>/<inst>/current.json
+**** Gets current conditions from <site>/<inst>
+*** http://metobs.ssec.wisc.edu/app/<site>/<inst>/<set>.json?begin=current
+**** Gets the current conditions from <site>/<inst>/<set>
+*** http://metobs.ssec.wisc.edu/app/<site>/<inst>/<set>.json?begin=2014-10-30|00:00:00
+**** Gets from 30th of October, 2014 to present
+*** http://metobs.ssec.wisc.edu/app/<site>/<inst>/<set>.json?begin=2014-10-30|00:00:00&end=2014-10-30|00:10:00
+**** Gets 10 minute slice starting on 30th of October, 2014
+*** http://metobs.ssec.wisc.edu/app/<site>/<inst>/<set>.json?begin=2014-10-30|00:00:00&end=+00:10:00
+**** Gets 10 minute slice starting on 30th of October, 2014
+*** http://metobs.ssec.wisc.edu/app/<site>/<inst>/<set>.json?begin=-00:00:10
+**** Gets last 10 minutes
+*** http://metobs.ssec.wisc.edu/app/<site>/<inst>/<set>.json?begin=-00:00:10&end=2014-10-30|00:00:00
+**** Gets 10 minutes of data before 2014-10-30|00:00:00
+*** http://metobs.ssec.wisc.edu/app/<site>/<inst>/<set>.json?begin=-00:00:10&end=2014-10-30|00:00:00&filter=average|00:00:10
+**** Gets 10 minutes of data before 2014-10-30|00:00:00 and averages it at 10 second intervals.
+** Convenience Data request example
+*** http://metobs.ssec.wisc.edu/app/<site>/data.json?instruments=buoy&sets=t|rh|spd&begin=2014-10-30|00:00:00&end=2014-10-30|00:00:10
+*** http://metobs.ssec.wisc.edu/app/<site>/<inst>/data.json?sets=t|rh|spd&begin=2014-10-30|00:00:00&end=2014-10-30|00:00:10

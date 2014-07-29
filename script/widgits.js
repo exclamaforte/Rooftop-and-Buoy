@@ -25,11 +25,11 @@ require (
 	registry.byClass = function (className) {
 	    return funct.filter(registry.toArray(), function (item) {
 		return item.class === className.toString();
-	    });	
+	    });
 	};
         //create the BorderContainer and attach it to our appLayout div
         var appLayout = new BorderContainer({
-	    design: "headline", 
+	    design: "headline",
 	    splitter: false
         }, "appLayout");
 
@@ -38,20 +38,20 @@ require (
 	    region: "left", splitter: false,
 	    id: "controls"
         });
-        
+
         var graphHolder = new ContentPane({
 	    region: "center",
             id: "graphHolder", "class": "centerPanel",
             splitter: false, style:"height: 100%;"
         });
-        
+
         //----------------tabs-----------------------------------------------------------------------------------------------
 	var key = new ContentPane({
 	    id: "key", region: "right"
-        }); 
+        });
 
         var display = new ContentPane({
-            title: "Display", id: "display", 
+            title: "Display", id: "display",
 	    "class": "controlDiv"
         });
 
@@ -91,7 +91,7 @@ require (
 
         var dataFileTypes = ['csv', 'netCDF', 'xls'];
         var imageFileTypes = ['png', 'jpg', 'pdf'];
-        
+
         var downloadData = new DropDownButton({
 	    label: "Download Data",
 	    id: "downloadData",
@@ -99,7 +99,7 @@ require (
         });
         var downloadImage = new DropDownButton({
 	    label: "Download Image",
-	    id: "downloadImage", 
+	    id: "downloadImage",
 	    dropDown: imageMenu
         });
 
@@ -109,22 +109,22 @@ require (
        });
 
         var downloadImagePane = new ContentPane({
-	    id: "downloadImagePane", 
+	    id: "downloadImagePane",
 	    "class": "downloadPane"
         });
-        
+
         var downloadSizeX = new VTB({
 	    type: "text",
 	    name: "downloadSizeX", id: "downloadSizeX",
-	    value: "X Size", 
+	    value: "X Size",
 	    regExp:"^[0-9]+|X Size$",
 	    style: "width: 100px"
-	    
+
         });
         var downloadSizeY = new VTB({
 	    type: "text",
 	    name: "downloadSizeY", id: "downloadSizeY",
-	    value: "Y Size", 
+	    value: "Y Size",
 	    regExp:"^[0-9]+|Y Size$",
 	    style: "width: 100px"
         });
@@ -132,7 +132,7 @@ require (
 	    id: "toggleButton",
 	    value: true,
 	    label: "Show Controls"
-        }); 
+        });
 
 
         var startTime = new TimeTextBox({
@@ -159,7 +159,6 @@ require (
 	        visibleRange: 'T01:00:00'
 	    }
         });
-        
         var startDate = new DateTextBox({
 	    id: "startDate",
 	    value: new Date(),
@@ -175,7 +174,7 @@ require (
 		width: "100px"
 	    }
         });
-        
+
         var timeUpdateButton = new Button({
 	    id: "timeUpdateButton",
 	    label: "Update Time"
@@ -203,19 +202,13 @@ require (
 	    cancel: [],
 	    value: "off"
 	});
-	var disableIndicators = new Button ({
-	    id: "disableIndicators",
-	    label: "Disable Indicators",
-	    value: false
-	});
         //=====--building the dom--=======
 
 	//display.addChild(optionsGrid);
-        
 
         //constructing the filetype download menu
-        dataFileTypes.map(function (item) {	
-            dataMenu.addChild( 
+        dataFileTypes.map(function (item) {
+            dataMenu.addChild(
                 new MenuItem({
 	            label: item,
                     iconClass:"dijitEditorIcon dijitEditorIconSave",
@@ -223,8 +216,8 @@ require (
                 })
             );
         });
-        imageFileTypes.map(function (item) { 
-            imageMenu.addChild( 
+        imageFileTypes.map(function (item) {
+            imageMenu.addChild(
                 new MenuItem({
 	            label: item,
                     iconClass:"dijitEditorIcon dijitEditorIconSave",
@@ -262,7 +255,6 @@ require (
 	domConstruct.place(toggleButton.domNode, graphHolder.domNode, "before");
 
 	graphHolder.addChild(toggleButton);
-	graphHolder.addChild(disableIndicators);
         appLayout.addChild(controls);
         appLayout.addChild(graphHolder);
 
